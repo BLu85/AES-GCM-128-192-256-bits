@@ -18,8 +18,7 @@ The configuration parameters can be combined so to obtain an IP that suits the u
     ├── src                     # Source files
     │   ├── vhdl                #   *.vhd only
     │   └── verilog             #   *.v only (TBD)
-    ├── tb                      # Cocotb tests and Makefile
-    └── doc                     # Repository documentation
+    └── tb                      # Cocotb tests and Makefile 
 
 ## Requirements
 
