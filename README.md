@@ -40,11 +40,11 @@ cd config
 ```
 then run:
 ```
-./gcm_config.py --mode 256 --size L --pipe 0
+python gcm_config.py --mode 256 --size L --pipe 0
 ```
 All the IP files have been exported in the folder _src_. To get **help** from the script, just run:
 ```
-./gcm_config --help
+python gcm_config --help
 ```
 
 ### Run the testbench
@@ -93,24 +93,24 @@ The **AES-GCM** IP can be configured in order to set the _AES_ key size, control
 To configure the **AES-GCM** IP the user has to type the command ```./gcm_config [OPTION]``` in the _config_ folder.
 To know how the IP can be configured, run the command:
 ```
-./gcm_config --help
+python gcm_config --help
 ```
 
-The _parameters_ listed in the ```help``` are discussed in the following sub-sections.
+The IP _parameters_ are discussed in the following sub-sections.
 
 ### Parameter: _mode_
 
 This parameter sets the size of the key the **AES-GCM** IP is expecting to receive.
 To set it, run the command:
 ```
-./gcm_config -m MODE
+python gcm_config -m MODE
 ```
 
 where _MODE_ can be one of the following values: 128, 192 or 256.
 
 **Example:** the following command sets the IP to receive keys of size 192-bits.
 ```
-./gcm_config -m 192
+python gcm_config -m 192
 ```
 
 ### Parameter: _size_
@@ -122,7 +122,7 @@ This option sets the size of block **aes_ecb**. This module receives the **PT** 
 This IP is composed by a number _k_ of **aes_round** instances. In order to meet the required performance in terms of throughput, area and power saving, the user can configure _k_ by running the following command:
 
 ```
-./gcm_config -s SIZE
+python gcm_config -s SIZE
 ```
 
 where _SIZE_ can get the values:
@@ -152,11 +152,11 @@ In both the configurations (_One-way_ or _Loop-back_ _pipeline_) backpressure ca
 
 **Example 1:** the following command sets the **AES-GCM** for keys of size 256 and a number of **aes_round** instances equal to 7.
 ```
-./gcm_config -m 256 -s M
+python gcm_config -m 256 -s M
 ```
 **Example 2:** the following command sets the number of **aes_round** instances equal to 2, independently from the _mode_ (in this case _mode_ will be 128 as this is the _default_ value if not explicited.)
 ```
-./gcm_config -s S
+python gcm_config -s S
 ```
 
 ### Parameter: _pipe_
@@ -169,14 +169,14 @@ The figure below shows a single **aes_round** module.
 It is composed by the blocks: _ByteSub_, _ShiftRow_, _MixColum_ and _AddRoundKey_. Each block perfoms purely combinatorial operations. The module output data are registered before being sent to the next **aes_round** instance. The first three block outputs can be singularly registered as well or can be fed directly into the next one in order to save logic and reduce the data latency. The user can decide which output to register by executing the command:
 
 ```
-./gcm_config -p PIPE
+python gcm_config -p PIPE
 ```
 
 where _PIPE_ is a number composed by 3 bits, each of whom enable or disable a flip-flop vector to register the output of the first three blocks of the pipe. When a bit is set ('1') the ouput of the corresponent block is registered.
 
 **Example:** the following command adds a registered stage after the _MixColumn_ block:
 ```
-./gcm_config -p 4
+python gcm_config -p 4
 ```
 In binary 4 = '_100_', so the output of the block _MixColumn_ is registered.
 It is worth notice that all the _MixColum_ blocks inside each of the **aes_round** instances in the **aes_ecb** module will have a registered output and the data latency will increase. So, if the user configures the **AES-GCM** for a 256-bits **key** and a **aes_ecb** _size_ equal to **L**, there will be 14 **aes_round** instances. The latency of the entire pipeline will be 28 clock cycles, 2 for each **aes_round** instance.
@@ -213,12 +213,12 @@ The testbench shares the same parameters used by the configuration script and in
 
 The following command creates an **AES-GCM** DUT with a key size of 192-bits, 6 **aes_round** instances (_Medium_ size), 2 pipe stages registered (_ByteSub_, _MixColumn_) and load 500028340 as the seed test. It also saves the signals in file _aes_dump.ghw_ (```-g``` option).
 ```
-./gcm_testbench.py -m192 -p 5 -s M -e 500028340 -g
+python gcm_testbench.py -m192 -p 5 -s M -e 500028340 -g
 ```
 
 To re-run the test, the ```--last-test``` parameter can be used:
 ```
-./gcm_testbench.py -l
+python gcm_testbench.py -l
 ```
 To show the other parameters, run the script with ```--help``` option.
 At the end of the test the **cocotb** table reports tests that passed or failed.
