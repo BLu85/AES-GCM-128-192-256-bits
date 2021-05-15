@@ -18,7 +18,7 @@ The configuration parameters can be combined so to obtain an IP that suits the u
     ├── src                     # Source files
     │   ├── vhdl                #   *.vhd only
     │   └── verilog             #   *.v only (TBD)
-    └── tb                      # Cocotb tests and Makefile 
+    └── tb                      # Cocotb tests and Makefile
 
 ## Requirements
 
@@ -53,7 +53,7 @@ python gcm_config --help
 
 The main sub-blocks that compose the **AES-GCM** IP are shown in the following figure.
 
-![ip_blocks](ip_blocks.png?style=centerme)
+![ip_blocks](doc/ip_blocks.png?style=centerme)
 
 The **ECB** (**E**lectronic **C**ode**B**ook) is the block that contains the _AES_ algorithm and performs the transformation of the input data. The input **KEY** is internally expanded and its stages used for encryption. The **ICB** (**I**nitial **C**ounter **B**lock) receives the 96-bits **IV** (**I**nitialization **V**ector), concatenates the value of a 32-bit counter and supplies the 128-bits to the **ECB**. The counter is incremented at every clock. The encrypted data produced by the **ECB** are xor-ed with the incoming _**P**lain**T**ext_ (**PT**) data. The data produced by the _xor_ operation are the so called _**C**ipher**T**ext_ (**CT**).
 The **GHASH** block receives the _**A**dditional **A**uthenticated **D**ata_ (**AAD**) and the **CT** and produces a **TAG** to authenticate the entire stream of encrypted data.
@@ -117,7 +117,7 @@ python gcm_config -m 192
 
 This option sets the size of block **aes_ecb**. This module receives the **PT** and the **key** stages and performs the _N_ rounds necessary to produce the **CT** , where _N_ can be 10, 12 or 14 for _AES_ modes equal to 128, 192 or 256-bits respectively.
 
-![aes_core](core.png?style=centerme)
+![aes_core](doc/core.png?style=centerme)
 
 This IP is composed by a number _k_ of **aes_round** instances. In order to meet the required performance in terms of throughput, area and power saving, the user can configure _k_ by running the following command:
 
@@ -164,7 +164,7 @@ python gcm_config -s S
 This parameter sets the number of registered stages in each of the **aes_round** instances.
 The figure below shows a single **aes_round** module.
 
-![round_pipe_stages](round_pipe.png?style=centerme)
+![round_pipe_stages](doc/round_pipe.png?style=centerme)
 
 It is composed by the blocks: _ByteSub_, _ShiftRow_, _MixColum_ and _AddRoundKey_. Each block perfoms purely combinatorial operations. The module output data are registered before being sent to the next **aes_round** instance. The first three block outputs can be singularly registered as well or can be fed directly into the next one in order to save logic and reduce the data latency. The user can decide which output to register by executing the command:
 
@@ -186,7 +186,7 @@ It is worth notice that all the _MixColum_ blocks inside each of the **aes_round
 
 In this section timing diagram to perform a data encryption is shown.
 
-![aes_gcm_timing_diagram](aes_gcm_timing_diagram.png?style=centerme)
+![aes_gcm_timing_diagram](doc/aes_gcm_timing_diagram.png?style=centerme)
 
 Steps to perfrom the data encryption are:
   1) **Key loading**: Key must be left align in the _gcm_key_word_i_ vector.
@@ -205,7 +205,7 @@ In order to feed the **AES-GCM** module with data to encrypt, the **IV** and the
 
 The testbench block diagram is shown in the picture below.
 
-![aes_core](tb.png?style=centerme)
+![aes_core](doc/tb.png?style=centerme)
 
 
 The testbench uses **cocotb** to interact with the DUT.
