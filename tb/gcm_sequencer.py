@@ -2,7 +2,7 @@ import cocotb
 import sys
 import random
 from cocotb.triggers import RisingEdge, Event
-from cocotb.monitors import Monitor
+from cocotb_bus.monitors import Monitor
 from gcm_driver import data_driver
 
 

@@ -27,10 +27,10 @@ class aad_driver:
         self.aad_data.assign('{:0{width}b}'.format(int.from_bytes(aad, "big"), width=n_bits))
         self.aad_bval.assign((n_bits // 8) * '1')
 
-        self.data <= self.aad_data.get_value()
-        self.bval <= self.aad_bval.get_value()
+        self.data.value = self.aad_data.get_value()
+        self.bval.value = self.aad_bval.get_value()
         yield RisingEdge(self.clk)
-        self.bval <= 0
+        self.bval.value = 0
 
 # ======================================================================================
 class pkt_driver:
@@ -41,11 +41,11 @@ class pkt_driver:
     @cocotb.coroutine
     def start_pkt(self):
         yield RisingEdge(self.clk)
-        self.pkt <= 1
+        self.pkt.value = 1
 
     @cocotb.coroutine
     def stop_pkt(self):
-        self.pkt <= 0
+        self.pkt.value = 0
         yield RisingEdge(self.clk)
 
 
@@ -75,12 +75,12 @@ class pt_driver:
         self.pt_data.assign('{:0{width}b}'.format(int.from_bytes(pt, "big"), width=n_bits))
         self.pt_dval.assign((n_bits // 8) * '1')
 
-        self.data <= self.pt_data.get_value()
-        self.bval <= self.pt_dval.get_value()
+        self.data.value = self.pt_data.get_value()
+        self.bval.value = self.pt_dval.get_value()
         yield RisingEdge(self.clk)
         while (self.ready.value != 1):
             yield RisingEdge(self.clk)
-        self.bval <= 0
+        self.bval.value = 0
 
 
 # ======================================================================================

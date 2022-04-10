@@ -9,7 +9,8 @@ from cocotb.result     import TestFailure
 from cocotb.binary     import BinaryValue as bv
 from cocotb.clock      import Clock
 from cocotb.triggers   import Timer, Event, RisingEdge, FallingEdge, ClockCycles
-from cocotb.scoreboard import Scoreboard
+
+from cocotb_bus.scoreboard import Scoreboard
 
 from key_exp           import aes_expand_key
 from gcm_driver        import pkt_driver, aad_driver, pt_driver, wait_for
@@ -43,22 +44,22 @@ class gcm_gctr(object):
         Reset the input signals and release the reset '''
 
         self.dut._log.debug("Reset DUT")
-        self.dut.rst_i                      <= 1
-        self.dut.aes_gcm_mode_i             <= 0
-        self.dut.aes_gcm_pipe_reset_i       <= 0
-        self.dut.aes_gcm_icb_stop_cnt_i     <= 0
-        self.dut.aes_gcm_iv_val_i           <= 0
-        self.dut.aes_gcm_iv_i               <= 0
-        self.dut.aes_gcm_icb_start_cnt_i    <= 0
-        self.dut.aes_gcm_key_word_i         <= 0
-        self.dut.aes_gcm_key_word_val_i     <= 0
-        self.dut.aes_gcm_ghash_pkt_val_i    <= 0
-        self.dut.aes_gcm_plain_text_i       <= 0
-        self.dut.aes_gcm_plain_text_bval_i  <= 0
-        self.dut.aes_gcm_ghash_aad_i        <= 0
-        self.dut.aes_gcm_ghash_aad_bval_i   <= 0
+        self.dut.rst_i.value                      = 1
+        self.dut.aes_gcm_mode_i.value             = 0
+        self.dut.aes_gcm_pipe_reset_i.value       = 0
+        self.dut.aes_gcm_icb_stop_cnt_i.value     = 0
+        self.dut.aes_gcm_iv_val_i.value           = 0
+        self.dut.aes_gcm_iv_i.value               = 0
+        self.dut.aes_gcm_icb_start_cnt_i.value    = 0
+        self.dut.aes_gcm_key_word_i.value         = 0
+        self.dut.aes_gcm_key_word_val_i.value     = 0
+        self.dut.aes_gcm_ghash_pkt_val_i.value    = 0
+        self.dut.aes_gcm_plain_text_i.value       = 0
+        self.dut.aes_gcm_plain_text_bval_i.value  = 0
+        self.dut.aes_gcm_ghash_aad_i.value        = 0
+        self.dut.aes_gcm_ghash_aad_bval_i.value   = 0
         yield Timer(duration, 'ns')
-        self.dut.rst_i                      <= 0
+        self.dut.rst_i.value                      = 0
         self.dut._log.debug("Reset released")
 
 
@@ -74,13 +75,13 @@ class gcm_gctr(object):
         # IV is loaded right aligned
         iv_bv.assign('{:>0{width}b}'.format(int(iv['data'], 16), width=int(iv['n_bytes']) * 8))
 
-        self.dut.aes_gcm_iv_val_i   <= 1
-        self.dut.aes_gcm_iv_i       <= iv_bv.get_value()
+        self.dut.aes_gcm_iv_val_i.value   = 1
+        self.dut.aes_gcm_iv_i.value       = iv_bv.get_value()
         yield RisingEdge(self.dut.clk_i)
-        self.dut.aes_gcm_iv_val_i   <= 0
-        self.dut.aes_gcm_iv_i       <= 0
+        self.dut.aes_gcm_iv_val_i.value   = 0
+        self.dut.aes_gcm_iv_i.value       = 0
 
-        self.dut._log.info("IV  = 0x%s", iv['data'])
+        self.dut._log.info(f"IV  = 0x{iv['data']}")
         self.iv_loaded = True
 
 
@@ -98,9 +99,9 @@ class gcm_gctr(object):
         if self.key_loaded is False:
             raise TestFailure("KEY must be loaded first")
         else:
-            self.dut.aes_gcm_icb_start_cnt_i <= 1
+            self.dut.aes_gcm_icb_start_cnt_i.value = 1
             yield RisingEdge(self.dut.clk_i)
-            self.dut.aes_gcm_icb_start_cnt_i <= 0
+            self.dut.aes_gcm_icb_start_cnt_i.value = 0
 
 
     # ======================================================================================
@@ -109,9 +110,9 @@ class gcm_gctr(object):
         '''
         Stop the ICB '''
 
-        self.dut.aes_gcm_icb_stop_cnt_i <= 1
+        self.dut.aes_gcm_icb_stop_cnt_i.value = 1
         yield RisingEdge(self.dut.clk_i)
-        self.dut.aes_gcm_icb_stop_cnt_i <= 0
+        self.dut.aes_gcm_icb_stop_cnt_i.value = 0
         self.iv_loaded = False
         self.dut._log.info("Start ICB counter")
 
@@ -122,7 +123,7 @@ class gcm_gctr(object):
         '''
         Set the AES mode '''
 
-        self.dut.aes_gcm_mode_i <= AES_KEY_TYPES.index(self.config['aes_mode'])
+        self.dut.aes_gcm_mode_i.value = AES_KEY_TYPES.index(self.config['aes_mode'])
         yield RisingEdge(self.dut.clk_i)
 
 
@@ -151,14 +152,14 @@ class gcm_gctr(object):
         # The Key is loaded right aligned
         key_bv.assign('{:>0{width}b}'.format(int(key_ext, 16), width=AES_KEY_256_WIDTH))
 
-        self.dut.aes_gcm_key_word_val_i <= aes_key_mode
-        self.dut.aes_gcm_key_word_i     <= key_bv.get_value()
+        self.dut.aes_gcm_key_word_val_i.value = aes_key_mode
+        self.dut.aes_gcm_key_word_i.value     = key_bv.get_value()
         yield RisingEdge(self.dut.clk_i)
-        self.dut.aes_gcm_key_word_val_i <= 0
-        self.dut.aes_gcm_key_word_i     <= 0
+        self.dut.aes_gcm_key_word_val_i.value = 0
+        self.dut.aes_gcm_key_word_i.value     = 0
 
-        self.dut._log.info("KEY: %s bits", self.config['aes_mode'])
-        self.dut._log.info("KEY = 0x%s", key['data'])
+        self.dut._log.info(f"KEY: {self.config['aes_mode']} bits")
+        self.dut._log.info(f"KEY = 0x{key['data']}")
         self.key_loaded = True
 
 
@@ -189,15 +190,15 @@ class gcm_gctr(object):
             key_bv.assign('{:>0{width}b}'.format(int(key_ext, 16), width=AES_KEY_256_WIDTH))
             exp_key = exp_key[16:]
             # The Key is loaded left aligned
-            self.dut.aes_gcm_key_word_val_i <= (i + 1)
-            self.dut.aes_gcm_key_word_i     <= key_bv.get_value()
+            self.dut.aes_gcm_key_word_val_i.value = (i + 1)
+            self.dut.aes_gcm_key_word_i.value     = key_bv.get_value()
             yield RisingEdge(self.dut.clk_i)
 
-        self.dut.aes_gcm_key_word_val_i <= 0
+        self.dut.aes_gcm_key_word_val_i.value = 0
         yield RisingEdge(self.dut.clk_i)
 
-        self.dut._log.info("KEY: %s bits", self.config['aes_mode'])
-        self.dut._log.info("KEY = 0x%s", key['data'])
+        self.dut._log.info(f"KEY: {self.config['aes_mode']} bits")
+        self.dut._log.info(f"KEY = 0x{key['data']}")
         self.key_loaded = True
 
 
