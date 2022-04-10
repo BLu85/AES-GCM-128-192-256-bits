@@ -50,6 +50,15 @@ python gcm_config --help
 
 ### Run the testbench
 
+Move first to the _tb_ folder:
+```
+cd tb
+```
+then run:
+```
+python gcm_testbench.py -m 128 -p 0 -s M -g
+```
+
 ## IP description
 
 The main sub-blocks that compose the **AES-GCM** IP are shown in the following figure.
@@ -214,7 +223,7 @@ The testbench shares the same parameters used by the configuration script and in
 
 The following command creates an **AES-GCM** DUT with a key size of 192-bits, 6 **aes_round** instances (_Medium_ size), 2 pipe stages registered (_ByteSub_, _MixColumn_) and load 500028340 as the seed test. It also saves the signals in file _aes_dump.ghw_ (```-g``` option).
 ```
-python gcm_testbench.py -m192 -p 5 -s M -e 500028340 -g
+python gcm_testbench.py -m 192 -p 5 -s M -e 500028340 -g
 ```
 
 To re-run the test, the ```--last-test``` parameter can be used:
