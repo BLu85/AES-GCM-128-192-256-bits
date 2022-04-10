@@ -26,6 +26,7 @@ The configuration parameters can be combined so to obtain an IP that suits the u
 * GHDL
 * Python3.5+
 * Cocotb (`pip3 install cocotb`)
+* Cocotb-bus (`pip3 install cocotb-bus`)
 * pycryptodome (`pip3 install pycryptodome`)
 * progressbar (`pip3 install progress`)
 
