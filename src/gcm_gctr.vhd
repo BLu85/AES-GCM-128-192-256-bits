@@ -58,6 +58,7 @@ architecture arch_gcm_gctr of gcm_gctr is
     signal gctr_data_mask_c         : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
     signal gctr_cipher_text_val_c   : std_logic;
     signal gctr_cipher_text_val_s   : std_logic;
+    signal gctr_cipher_text_bval_c  : std_logic_vector(NB_STAGE_C-1 downto 0);
     signal gctr_cipher_text_bval_s  : std_logic_vector(NB_STAGE_C-1 downto 0);
     signal gctr_cipher_text_c       : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
     signal gctr_cipher_text_s       : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
@@ -180,11 +181,7 @@ begin
         if(rst_i = '1') then
             gctr_cipher_text_val_s <= '0';
         elsif(rising_edge(clk_i)) then
-            if(gctr_cipher_text_val_c = '1') then
-                gctr_cipher_text_val_s <= gctr_cipher_text_val_c;
-            else
-                gctr_cipher_text_val_s <= '0';
-            end if;
+            gctr_cipher_text_val_s <= gctr_cipher_text_val_c;
         end if;
     end process;
 
@@ -193,13 +190,11 @@ begin
         if(rst_i = '1') then
             gctr_cipher_text_bval_s <= (others => '0');
         elsif(rising_edge(clk_i)) then
-            if(gctr_cipher_text_val_c = '1') then
-                gctr_cipher_text_bval_s <= gctr_plain_text_bval_i;
-            else
-                gctr_cipher_text_bval_s <= (others => '0');
-            end if;
+            gctr_cipher_text_bval_s <= gctr_cipher_text_bval_c;
         end if;
     end process;
+
+    gctr_cipher_text_bval_c <= gctr_plain_text_bval_i when (gctr_cipher_text_val_c = '1') else (others => '0');
 
     ---------------------------------------------------------------
     aes_ecb_val_o           <= aes_ecb_val_c;

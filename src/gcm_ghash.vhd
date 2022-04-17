@@ -309,11 +309,11 @@ begin
             gf_mult_y_o => y_part_0_c);
 
 
-            u_ghash_gfmul_1: ghash_gfmul
-            port map(
-                gf_mult_x_i => x_part_1_c,
-                gf_mult_h_i => h_s,
-                gf_mult_y_o => y_part_1_c);
+    u_ghash_gfmul_1: ghash_gfmul
+        port map(
+            gf_mult_x_i => x_part_1_c,
+            gf_mult_h_i => h_s,
+            gf_mult_y_o => y_part_1_c);
 
     x_part_0_c <= ZERO_C & x_c(63 downto 0);
     h_part_0_s <= ZERO_C & h_s(63 downto 0);

@@ -37,13 +37,17 @@ architecture arch_aes_icb of aes_icb is
 
     --! Signals
     signal icb_start_cnt_s      : std_logic;
-    signal load_iv_c            : std_logic;
+    signal load_iv_en           : std_logic;
     signal cnt_val_c            : std_logic;
+    signal cnt_val_en           : std_logic;
+    signal icb_iv_val_c         : std_logic;
     signal icb_iv_val_s         : std_logic;
     signal icb_cnt_of_s         : std_logic;
     signal cnt_overflow_c       : std_logic;
     signal icb_iv_s             : std_logic_vector(GCM_ICB_WIDTH_C-1 downto 0);
+    signal cnt_c                : std_logic_vector(GCM_CNT_WIDTH_C-1 downto 0);
     signal cnt_s                : std_logic_vector(GCM_CNT_WIDTH_C-1 downto 0);
+    signal cnt_inc              : std_logic_vector(GCM_CNT_WIDTH_C-1 downto 0);
 
 begin
 
@@ -55,13 +59,11 @@ begin
         if(rst_i = '1') then
             icb_iv_val_s <= '0';
         elsif(rising_edge(clk_i)) then
-            if(icb_stop_cnt_i = '1' or cnt_overflow_c = '1') then
-                icb_iv_val_s <= '0';
-            elsif(icb_start_cnt_i = '1') then
-                icb_iv_val_s <= '1';
-            end if;
+            icb_iv_val_s <= icb_iv_val_c;
         end if;
     end process;
+
+    icb_iv_val_c <= (icb_iv_val_s or icb_start_cnt_i) and not(icb_stop_cnt_i or cnt_overflow_c);
 
     --------------------------------------------------------------------------------
     --! Load IV 96-bit
@@ -71,13 +73,13 @@ begin
         if(rst_i = '1') then
             icb_iv_s <= (others => '0');
         elsif(rising_edge(clk_i)) then
-            if(load_iv_c = '1') then
+            if(load_iv_en = '1') then
                 icb_iv_s <= icb_iv_i;                   --! Preload the IV base
             end if;
         end if;
     end process;
 
-    load_iv_c <= icb_iv_val_i and not(icb_iv_val_s);    --! Valid rising edge
+    load_iv_en <= icb_iv_val_i and not(icb_iv_val_s);   --! Valid rising edge
 
     --------------------------------------------------------------------------------
     --! Increment the lower 32-bit of the IV
@@ -87,15 +89,16 @@ begin
         if(rst_i = '1') then
             cnt_s <= IV_CNT_RST_VALUE_C;
         elsif(rising_edge(clk_i)) then
-            if(icb_start_cnt_i = '1') then
-                cnt_s <= IV_CNT_RST_VALUE_C;
-            elsif(cnt_val_c = '1') then
-                cnt_s <= cnt_s + 1;
+            if(cnt_val_en = '1') then
+                cnt_s <= cnt_c;
             end if;
         end if;
     end process;
 
-    cnt_val_c <= icb_iv_val_s and not(aes_ecb_busy_i) and not(cnt_overflow_c);
+    cnt_val_en <= (icb_start_cnt_i or cnt_val_c);
+    cnt_val_c  <= icb_iv_val_s and not(aes_ecb_busy_i) and not(cnt_overflow_c);
+    cnt_c      <= IV_CNT_RST_VALUE_C when (icb_start_cnt_i = '1') else cnt_inc;
+    cnt_inc    <= cnt_s + 1;
 
     --------------------------------------------------------------------------------
     --! Counter overflow
