@@ -36,18 +36,17 @@ architecture arch_aes_icb of aes_icb is
     --! Types
 
     --! Signals
-    signal icb_start_cnt_s      : std_logic;
-    signal load_iv_en           : std_logic;
-    signal cnt_val_c            : std_logic;
-    signal cnt_val_en           : std_logic;
-    signal icb_iv_val_c         : std_logic;
-    signal icb_iv_val_s         : std_logic;
-    signal icb_cnt_of_s         : std_logic;
-    signal cnt_overflow_c       : std_logic;
-    signal icb_iv_s             : std_logic_vector(GCM_ICB_WIDTH_C-1 downto 0);
-    signal cnt_c                : std_logic_vector(GCM_CNT_WIDTH_C-1 downto 0);
-    signal cnt_s                : std_logic_vector(GCM_CNT_WIDTH_C-1 downto 0);
-    signal cnt_inc              : std_logic_vector(GCM_CNT_WIDTH_C-1 downto 0);
+    signal iv_load_en        : std_logic;
+    signal iv_cnt_val        : std_logic;
+    signal iv_cnt_val_en     : std_logic;
+    signal iv_val_d          : std_logic;
+    signal iv_val_q          : std_logic;
+    signal iv_cnt_of_d       : std_logic;
+    signal iv_cnt_of_q       : std_logic;
+    signal iv_q              : std_logic_vector(GCM_ICB_WIDTH_C-1 downto 0);
+    signal iv_cnt_d          : std_logic_vector(GCM_CNT_WIDTH_C-1 downto 0);
+    signal iv_cnt_q          : std_logic_vector(GCM_CNT_WIDTH_C-1 downto 0);
+    signal iv_cnt_inc        : std_logic_vector(GCM_CNT_WIDTH_C-1 downto 0);
 
 begin
 
@@ -57,13 +56,13 @@ begin
     cnt_start_stop_p : process(rst_i, clk_i)
     begin
         if(rst_i = '1') then
-            icb_iv_val_s <= '0';
+            iv_val_q <= '0';
         elsif(rising_edge(clk_i)) then
-            icb_iv_val_s <= icb_iv_val_c;
+            iv_val_q <= iv_val_d;
         end if;
     end process;
 
-    icb_iv_val_c <= (icb_iv_val_s or icb_start_cnt_i) and not(icb_stop_cnt_i or cnt_overflow_c);
+    iv_val_d <= not(icb_stop_cnt_i or iv_cnt_of_d) and (iv_val_q or icb_start_cnt_i);
 
     --------------------------------------------------------------------------------
     --! Load IV 96-bit
@@ -71,15 +70,15 @@ begin
     load_iv_p : process(rst_i, clk_i)
     begin
         if(rst_i = '1') then
-            icb_iv_s <= (others => '0');
+            iv_q <= (others => '0');
         elsif(rising_edge(clk_i)) then
-            if(load_iv_en = '1') then
-                icb_iv_s <= icb_iv_i;                   --! Preload the IV base
+            if(iv_load_en = '1') then
+                iv_q <= icb_iv_i;                   --! Preload the IV base
             end if;
         end if;
     end process;
 
-    load_iv_en <= icb_iv_val_i and not(icb_iv_val_s);   --! Valid rising edge
+    iv_load_en <= icb_iv_val_i and not(iv_val_q);   --! Valid rising edge
 
     --------------------------------------------------------------------------------
     --! Increment the lower 32-bit of the IV
@@ -87,18 +86,18 @@ begin
     iv_p : process(rst_i, clk_i)
     begin
         if(rst_i = '1') then
-            cnt_s <= IV_CNT_RST_VALUE_C;
+            iv_cnt_q <= IV_CNT_RST_VALUE_C;
         elsif(rising_edge(clk_i)) then
-            if(cnt_val_en = '1') then
-                cnt_s <= cnt_c;
+            if(iv_cnt_val_en = '1') then
+                iv_cnt_q <= iv_cnt_d;
             end if;
         end if;
     end process;
 
-    cnt_val_en <= (icb_start_cnt_i or cnt_val_c);
-    cnt_val_c  <= icb_iv_val_s and not(aes_ecb_busy_i) and not(cnt_overflow_c);
-    cnt_c      <= IV_CNT_RST_VALUE_C when (icb_start_cnt_i = '1') else cnt_inc;
-    cnt_inc    <= cnt_s + 1;
+    iv_cnt_val_en <= (icb_start_cnt_i or iv_cnt_val);
+    iv_cnt_val    <= iv_val_q and not(aes_ecb_busy_i) and not(iv_cnt_of_d);
+    iv_cnt_d      <= IV_CNT_RST_VALUE_C when (icb_start_cnt_i = '1') else iv_cnt_inc;
+    iv_cnt_inc    <= iv_cnt_q + 1;
 
     --------------------------------------------------------------------------------
     --! Counter overflow
@@ -106,17 +105,17 @@ begin
     cnt_of_p: process(clk_i, rst_i)
     begin
         if(rst_i = '1') then
-            icb_cnt_of_s <= '0';
+            iv_cnt_of_q <= '0';
         elsif(rising_edge(clk_i)) then
-            icb_cnt_of_s <= cnt_overflow_c;
+            iv_cnt_of_q <= iv_cnt_of_d;
         end if;
     end process;
 
-    cnt_overflow_c <= and_reduce(cnt_s);
+    iv_cnt_of_d <= and_reduce(iv_cnt_q);
 
     ---------------------------------------------------------------
-    icb_val_o           <= icb_iv_val_s;
-    icb_iv_o            <= icb_iv_s & cnt_s;
-    icb_cnt_overflow_o  <= icb_cnt_of_s;
+    icb_val_o           <= iv_val_q;
+    icb_iv_o            <= iv_q & iv_cnt_q;
+    icb_cnt_overflow_o  <= iv_cnt_of_q;
 
 end architecture;

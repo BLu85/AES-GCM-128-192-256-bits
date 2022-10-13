@@ -48,23 +48,23 @@ architecture arch_gcm_gctr of gcm_gctr is
     --! Types
 
     --! Signals
-    signal icb_val_c                : std_logic;
-    signal icb_iv_c                 : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
-    signal gctr_plain_text_val_c    : std_logic;
-    signal gctr_plain_text_c        : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
-    signal aes_ecb_busy_c           : std_logic;
-    signal aes_ecb_val_c            : std_logic;
-    signal aes_ecb_data_c           : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
-    signal gctr_data_mask_c         : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
-    signal gctr_cipher_text_val_c   : std_logic;
-    signal gctr_cipher_text_val_s   : std_logic;
-    signal gctr_cipher_text_bval_c  : std_logic_vector(NB_STAGE_C-1 downto 0);
-    signal gctr_cipher_text_bval_s  : std_logic_vector(NB_STAGE_C-1 downto 0);
-    signal gctr_cipher_text_c       : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
-    signal gctr_cipher_text_s       : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
-    signal gctr_mode_c              : std_logic_vector(1 downto 0);
-    signal gctr_ack_c               : std_logic;
-    signal gctr_cipher_ready_c      : std_logic;
+    signal icb_val                  : std_logic;
+    signal icb_iv                   : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
+    signal gctr_plain_text_val      : std_logic;
+    signal gctr_plain_text          : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
+    signal aes_ecb_busy             : std_logic;
+    signal aes_ecb_val              : std_logic;
+    signal aes_ecb_data             : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
+    signal gctr_data_mask           : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
+    signal gctr_cipher_text_val_d   : std_logic;
+    signal gctr_cipher_text_val_q   : std_logic;
+    signal gctr_cipher_text_bval_d  : std_logic_vector(NB_STAGE_C-1 downto 0);
+    signal gctr_cipher_text_bval_q  : std_logic_vector(NB_STAGE_C-1 downto 0);
+    signal gctr_cipher_text_d       : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
+    signal gctr_cipher_text_q       : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
+    signal gctr_mode                : std_logic_vector(1 downto 0);
+    signal gctr_ack                 : std_logic;
+    signal gctr_cipher_ready        : std_logic;
 
     --------------------------------------------------------------------------------
     --! Component declaration
@@ -104,7 +104,7 @@ architecture arch_gcm_gctr of gcm_gctr is
 
 begin
 
-    gctr_mode_c <= gctr_mode_i when (gctr_mode_g = AES_MODE_ALL_C) else
+    gctr_mode <= gctr_mode_i when (gctr_mode_g = AES_MODE_ALL_C) else
                    gctr_mode_g;
 
     --------------------------------------------------------------------------------
@@ -118,9 +118,9 @@ begin
             icb_stop_cnt_i              => gctr_icb_stop_cnt_i,
             icb_iv_val_i                => gctr_iv_val_i,
             icb_iv_i                    => gctr_iv_i,
-            aes_ecb_busy_i              => aes_ecb_busy_c,
-            icb_val_o                   => icb_val_c,
-            icb_iv_o                    => icb_iv_c,
+            aes_ecb_busy_i              => aes_ecb_busy,
+            icb_val_o                   => icb_val,
+            icb_iv_o                    => icb_iv,
             icb_cnt_overflow_o          => gctr_icb_cnt_overflow_o);
 
     u_aes_ecb : aes_ecb
@@ -129,24 +129,24 @@ begin
         port map (
             rst_i                       => rst_i,
             clk_i                       => clk_i,
-            aes_mode_i                  => gctr_mode_c,
+            aes_mode_i                  => gctr_mode,
             aes_key_word_val_i          => gctr_key_word_val_i,
             aes_key_word_i              => gctr_key_word_i,
             aes_pipe_reset_i            => gctr_pipe_reset_i,
-            aes_plain_text_val_i        => gctr_plain_text_val_c,
-            aes_plain_text_i            => gctr_plain_text_c,
-            aes_cipher_text_ack_i       => gctr_ack_c,           --! Acknoledge the ECB block that a data has been read
-            aes_cipher_text_val_o       => aes_ecb_val_c,
-            aes_cipher_text_o           => aes_ecb_data_c,
-            aes_ecb_busy_o              => aes_ecb_busy_c);
+            aes_plain_text_val_i        => gctr_plain_text_val,
+            aes_plain_text_i            => gctr_plain_text,
+            aes_cipher_text_ack_i       => gctr_ack,           --! Acknoledge the ECB block that a data has been read
+            aes_cipher_text_val_o       => aes_ecb_val,
+            aes_cipher_text_o           => aes_ecb_data,
+            aes_ecb_busy_o              => aes_ecb_busy);
 
-    gctr_plain_text_val_c   <= gctr_icb_start_cnt_i or icb_val_c;
-    gctr_plain_text_c       <= ZERO_128_C when (gctr_icb_start_cnt_i = '1') else icb_iv_c;     --! Create H0 when starting the counter
-    gctr_ack_c              <= not(ghash_h_loaded_i and ghash_j0_loaded_i) or or_reduce(gctr_plain_text_bval_i);
+    gctr_plain_text_val     <= gctr_icb_start_cnt_i or icb_val;
+    gctr_plain_text         <= ZERO_128_C when (gctr_icb_start_cnt_i = '1') else icb_iv;     --! Create H0 when starting the counter
+    gctr_ack                <= not(ghash_h_loaded_i and ghash_j0_loaded_i) or or_reduce(gctr_plain_text_bval_i);
 
     --! PT can be xor-ed after H0 and J0 have been calculated
-    gctr_cipher_ready_c     <= aes_ecb_val_c and ghash_h_loaded_i and ghash_j0_loaded_i;
-    gctr_cipher_text_val_c  <= gctr_cipher_ready_c and or_reduce(gctr_plain_text_bval_i);
+    gctr_cipher_ready       <= aes_ecb_val and ghash_h_loaded_i and ghash_j0_loaded_i;
+    gctr_cipher_text_val_d  <= gctr_cipher_ready and or_reduce(gctr_plain_text_bval_i);
 
     --------------------------------------------------------------------------------
     --! Expand one bval bit to one byte
@@ -155,12 +155,12 @@ begin
     begin
         for i in 0 to NB_STAGE_C-1 loop
             for j in 0 to 7 loop
-                gctr_data_mask_c((i * 8) + j) <= gctr_plain_text_bval_i(i);
+                gctr_data_mask((i * 8) + j) <= gctr_plain_text_bval_i(i);
             end loop;
         end loop;
     end process;
 
-    gctr_cipher_text_c <= (gctr_plain_text_i xor aes_ecb_data_c) and gctr_data_mask_c;
+    gctr_cipher_text_d <= (gctr_plain_text_i xor aes_ecb_data) and gctr_data_mask;
 
     --------------------------------------------------------------------------------
     --! Sample data
@@ -168,10 +168,10 @@ begin
     cipher_text_p : process(rst_i, clk_i)
     begin
         if(rst_i = '1') then
-            gctr_cipher_text_s <= (others => '0');
+            gctr_cipher_text_q <= (others => '0');
         elsif(rising_edge(clk_i)) then
-            if(gctr_cipher_text_val_c = '1') then
-                gctr_cipher_text_s <= gctr_cipher_text_c;
+            if(gctr_cipher_text_val_d = '1') then
+                gctr_cipher_text_q <= gctr_cipher_text_d;
             end if;
         end if;
     end process;
@@ -179,29 +179,29 @@ begin
     cipher_text_val_p : process(rst_i, clk_i)
     begin
         if(rst_i = '1') then
-            gctr_cipher_text_val_s <= '0';
+            gctr_cipher_text_val_q <= '0';
         elsif(rising_edge(clk_i)) then
-            gctr_cipher_text_val_s <= gctr_cipher_text_val_c;
+            gctr_cipher_text_val_q <= gctr_cipher_text_val_d;
         end if;
     end process;
 
     cipher_text_bval_p : process(rst_i, clk_i)
     begin
         if(rst_i = '1') then
-            gctr_cipher_text_bval_s <= (others => '0');
+            gctr_cipher_text_bval_q <= (others => '0');
         elsif(rising_edge(clk_i)) then
-            gctr_cipher_text_bval_s <= gctr_cipher_text_bval_c;
+            gctr_cipher_text_bval_q <= gctr_cipher_text_bval_d;
         end if;
     end process;
 
-    gctr_cipher_text_bval_c <= gctr_plain_text_bval_i when (gctr_cipher_text_val_c = '1') else (others => '0');
+    gctr_cipher_text_bval_d <= gctr_plain_text_bval_i when (gctr_cipher_text_val_d = '1') else (others => '0');
 
     ---------------------------------------------------------------
-    aes_ecb_val_o           <= aes_ecb_val_c;
-    aes_ecb_data_o          <= aes_ecb_data_c;
-    gctr_cipher_ready_o     <= gctr_cipher_ready_c;
-    gctr_cipher_text_val_o  <= gctr_cipher_text_val_s;
-    gctr_cipher_text_bval_o <= gctr_cipher_text_bval_s;
-    gctr_cipher_text_o      <= gctr_cipher_text_s;
+    aes_ecb_val_o           <= aes_ecb_val;
+    aes_ecb_data_o          <= aes_ecb_data;
+    gctr_cipher_ready_o     <= gctr_cipher_ready;
+    gctr_cipher_text_val_o  <= gctr_cipher_text_val_q;
+    gctr_cipher_text_bval_o <= gctr_cipher_text_bval_q;
+    gctr_cipher_text_o      <= gctr_cipher_text_q;
 
 end architecture;
