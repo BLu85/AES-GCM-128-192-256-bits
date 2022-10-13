@@ -56,8 +56,9 @@ begin
         end if;
     end process;
 
-    last_rnd_busy <= stage_val_q and not(last_rnd_ack_i);
     stage_val_d   <= not(last_rnd_reset_i) and ((stage_val_q and last_rnd_busy) or (last_rnd_val_i and not(last_rnd_busy)));
+
+    last_rnd_busy <= stage_val_q and not(last_rnd_ack_i);
 
     --------------------------------------------------------------------------------
     --! Sample data
@@ -73,8 +74,9 @@ begin
         end if;
     end process;
 
-    stage_val_en <= not(last_rnd_busy) and last_rnd_val_i;
     stage_data_d <= add_round_key(last_rnd_data_i, kexp_last_stage_i);
+
+    stage_val_en <= not(last_rnd_busy) and last_rnd_val_i;
 
     --------------------------------------------------------------------------------
     --! Data have completed all the rounds
