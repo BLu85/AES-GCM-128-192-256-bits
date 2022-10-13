@@ -13,8 +13,8 @@ use work.gcm_pkg.all;
 --------------------------------------------------------------------------------
 entity ghash_gfmul is
     port(
-        gf_mult_x_i         : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
         gf_mult_h_i         : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
+        gf_mult_x_i         : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
         gf_mult_y_o         : out std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0));
 end entity;
 
@@ -27,7 +27,7 @@ architecture arch_ghash_gfmul of ghash_gfmul is
     type gf_array_t is array ((GCM_DATA_WIDTH_C-1) downto 0) of std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
 
     --! Signals
-    signal z_c : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
+    signal gf_z : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
 
 begin
 
@@ -59,11 +59,11 @@ begin
 
         --! Z_i xor V_i
         for i in 0 to GCM_DATA_WIDTH_C-1 loop
-            z_c(i) <= xor_reduce(acc_v(i));
+            gf_z(i) <= xor_reduce(acc_v(i));
         end loop;
     end process;
 
     ---------------------------------------------------------------
-    gf_mult_y_o <= z_c;
+    gf_mult_y_o <= gf_z;
 
 end architecture;
