@@ -65,9 +65,9 @@ architecture arch_aes_round of aes_round is
             file_lines.append(indent + 'signal data_' + tmp_str + ': state_t;')
             file_lines.append(  '')
         tmp_str = str(i) + '             '
-        file_lines.append(indent + 'signal dval_' + tmp_str + ': std_logic;')
-        file_lines.append(indent + 'signal cnt_' + tmp_str + ' : round_cnt_t;')
-        file_lines.append(indent + 'signal data_' + tmp_str + ': state_t;')
+        file_lines.append(indent + 'signal dval_' + tmp_str + '  : std_logic;')
+        file_lines.append(indent + 'signal cnt_' + tmp_str + '   : round_cnt_t;')
+        file_lines.append(indent + 'signal data_' + tmp_str + '  : state_t;')
         file_lines.append(indent + 'signal rnd_stage_data_' + str(i) + '     : state_t;')
         file_lines.append(  '')
 
@@ -86,9 +86,9 @@ architecture arch_aes_round of aes_round is
 begin
 
     --! Sets the number of pipeline rounds to perform
-    thr                 <=    NR_192_C    when (aes_mode_i = AES_MODE_192_C) else
-                              NR_256_C    when (aes_mode_i = AES_MODE_256_C) else
-                              NR_128_C;   --! aes_mode_i = AES_MODE_128_C
+    thr <=  NR_192_C    when (aes_mode_i = AES_MODE_192_C) else
+            NR_256_C    when (aes_mode_i = AES_MODE_256_C) else
+            NR_128_C;   --! aes_mode_i = AES_MODE_128_C
 
     last_loop_p : process(cnt_3_q, thr, rnd_i_am_last_inst_i)
     begin
@@ -102,20 +102,20 @@ begin
     end process;
 
     --! Loop data back in the round stage
-    loop_back           <= dval_3_q and not(last_loop);
+    loop_back         <= dval_3_q and not(last_loop);
 
     --! When '1' the data are valid for the next stage
-    next_stage_val      <= '0' when (rnd_i_am_last_inst_i = '1' and last_loop = '1') else dval_3_q;
+    next_stage_val    <= '0' when (rnd_i_am_last_inst_i = '1' and last_loop = '1') else dval_3_q;
 
     --! Data are valid and can exit the pipeline
-    stage_val           <= dval_3_q and last_loop;
+    stage_val         <= dval_3_q and last_loop;
 
     --! Stall the current pipeline stage if the next stage is stalled and the current stage has valid data
-    stage_stall(3)      <= dval_3_q and rnd_next_stage_busy_i and last_loop;
-    stage_stall(2)      <= dval_3   and stage_stall(3);
-    stage_stall(1)      <= dval_2   and stage_stall(2);
-    stage_stall(0)      <= dval_1   and stage_stall(1);
-    stage_busy          <= stage_stall(0);
+    stage_stall(3)    <= dval_3_q and rnd_next_stage_busy_i and last_loop;
+    stage_stall(2)    <= dval_3   and stage_stall(3);
+    stage_stall(1)    <= dval_2   and stage_stall(2);
+    stage_stall(0)    <= dval_1   and stage_stall(1);
+    stage_busy        <= stage_stall(0);
 ''')
 
     # Create the AES stages
@@ -133,9 +133,9 @@ begin
 
     # Create the data connection
     file_lines.append(indent + '--! Create the data connection')
-    file_lines.append(indent + 'rnd_stage_data_0    <= rnd_stage_data_i;')
+    file_lines.append(indent + 'rnd_stage_data_0  <= rnd_stage_data_i;')
     for i in range(3):
-        tmp_str  = 'rnd_stage_data_' + str(i + 1) + '    <= data_' + str(i)
+        tmp_str  = 'rnd_stage_data_' + str(i + 1) + '  <= data_' + str(i)
         tmp_str += '_q;' if AES_CORE_PIPE & (1 << i) else ';'
         file_lines.append(indent + tmp_str)
     file_lines.append('')
@@ -158,7 +158,7 @@ begin
         file_lines.append(indent + tmp_str)
     file_lines.append('')
 
-    file_lines.append(indent + 'rnd_stage_trg_key   <= \'1\' when ((cnt_3 /= cnt_3_q) and (stage_stall(3) = \'0\') and (rnd_stage_val_i = \'1\')) else \'0\';')
+    file_lines.append(indent + 'rnd_stage_trg_key <= \'1\' when ((cnt_3 /= cnt_3_q) and (stage_stall(3) = \'0\') and (rnd_stage_val_i = \'1\')) else \'0\';')
 
     file_lines.append(
 '''
@@ -218,28 +218,28 @@ begin
 
     --------------------------------------------------------------------------------
     --! Loop back data in the round stage
-    rnd_loop_back_o         <= loop_back;
+    rnd_loop_back_o      <= loop_back;
 
     --! Data are ready for the last round
-    rnd_stage_val_o         <= stage_val;
+    rnd_stage_val_o      <= stage_val;
 
     --! Index to key expansion
-    rnd_key_index_o         <= cnt_0;
+    rnd_key_index_o      <= cnt_0;
 
     --! Next stage index
-    rnd_stage_cnt_o         <= cnt_3_q;
+    rnd_stage_cnt_o      <= cnt_3_q;
 
     --! Input data for the final round
-    rnd_stage_data_o        <= data_3_q;
+    rnd_stage_data_o     <= data_3_q;
 
     --! Read request to get the partial key block
-    rnd_stage_trg_key_o     <= rnd_stage_trg_key;
+    rnd_stage_trg_key_o  <= rnd_stage_trg_key;
 
     --! Loop data once again
-    rnd_next_stage_val_o    <= next_stage_val;
+    rnd_next_stage_val_o <= next_stage_val;
 
     --! Prevent to read new input data when busy is high
-    rnd_i_am_busy_o         <= stage_busy;
+    rnd_i_am_busy_o      <= stage_busy;
 
 end architecture;
 ''')
