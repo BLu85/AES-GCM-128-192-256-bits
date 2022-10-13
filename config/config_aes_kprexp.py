@@ -57,16 +57,16 @@ architecture arch_aes_kexp of aes_kexp is
 
     --! Signals
 
-    signal key_idx_c             : natural range 0 to ''' + str(n_stages + 1) + ''';
-    signal key_idx_q             : natural range 0 to ''' + str(n_stages + 1) + ''';
-    signal kexp_key_word_q       : std_logic_vector(AES_128_KEY_WIDTH_C-1 downto 0);
-    signal kexp_key_next_stage_c : state_arr_t(core_num_g downto 0);
-    signal kexp_vec_q            : state_arr_t (''' + str(n_stages) + ''' downto 0);
+    signal key_idx_d           : natural range 0 to ''' + str(n_stages + 1) + ''';
+    signal key_idx_q           : natural range 0 to ''' + str(n_stages + 1) + ''';
+    signal kexp_key_word_q     : std_logic_vector(AES_128_KEY_WIDTH_C-1 downto 0);
+    signal kexp_key_next_stage : state_arr_t(core_num_g downto 0);
+    signal kexp_vec_q          : state_arr_t (''' + str(n_stages) + ''' downto 0);
 
 begin
 
 
-    key_idx_c <= to_integer(unsigned(kexp_key_word_val_i));
+    key_idx_d <= to_integer(unsigned(kexp_key_word_val_i));
 
     --------------------------------------------------------------------------------
     --! Sample key inputs
@@ -77,7 +77,7 @@ begin
             key_idx_q       <= 0;
             kexp_key_word_q <= (others => '0');
         elsif(rising_edge(clk_i)) then
-            key_idx_q       <= key_idx_c;
+            key_idx_q       <= key_idx_d;
             kexp_key_word_q <= kexp_key_word_i(AES_256_KEY_WIDTH_C-1 downto AES_128_KEY_WIDTH_C);
         end if;
     end process;
@@ -101,7 +101,7 @@ begin
     ''')
 
     for i in range(n_rounds):
-        file_lines.append('\tkexp_key_next_stage_c(' + str(i) + ') <= ')
+        file_lines.append('\tkexp_key_next_stage(' + str(i) + ')   <= ')
         for n in range(len(rounds[i][:-1])):
             p = str(rounds[i][n])
             file_lines.append('\t\t\tkexp_vec_q(' + p + ')\twhen (kexp_cnt_i(' + str(i) + ') = ' + p + ')\telse')
@@ -112,7 +112,7 @@ begin
     '''
 
     --! Outpus
-    kexp_key_next_stage_o   <= kexp_key_next_stage_c(core_num_g-1 downto 0);
+    kexp_key_next_stage_o   <= kexp_key_next_stage(core_num_g-1 downto 0);
     kexp_key_last_stage_o   <= kexp_vec_q(''' + str(n_stages) + ''');
 
 end architecture;

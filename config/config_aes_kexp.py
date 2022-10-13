@@ -57,38 +57,39 @@ architecture arch_aes_kexp of aes_kexp is
 
     --! Signals
 
-    signal w_in_0_c              : word_t;
-    signal w_in_1_c              : word_t;
-    signal w_in_2_c              : word_t;
-    signal w_in_3_c              : word_t;
-    signal w_in_4_c              : word_t;
-    signal w_in_5_c              : word_t;
-    signal w_in_6_c              : word_t;
-    signal w_in_7_c              : word_t;
+    signal w_in_0_d              : word_t;
+    signal w_in_1_d              : word_t;
+    signal w_in_2_d              : word_t;
+    signal w_in_3_d              : word_t;
 
-    signal w_0_s                 : word_t;
-    signal w_1_s                 : word_t;
-    signal w_2_s                 : word_t;
-    signal w_3_s                 : word_t;
-    signal w_4_s                 : word_t;
-    signal w_5_s                 : word_t;
-    signal w_6_s                 : word_t;
-    signal w_7_s                 : word_t;
+    signal w_in_4                : word_t;
+    signal w_in_5                : word_t;
+    signal w_in_6                : word_t;
+    signal w_in_7                : word_t;
 
-    signal tmp_0_c               : word_t;
-    signal tmp_1_c               : word_t;
-    signal tmp_2_c               : word_t;
-    signal tmp_3_c               : word_t;
+    signal w_0_q                 : word_t;
+    signal w_1_q                 : word_t;
+    signal w_2_q                 : word_t;
+    signal w_3_q                 : word_t;
+    signal w_4_q                 : word_t;
+    signal w_5_q                 : word_t;
+    signal w_6_q                 : word_t;
+    signal w_7_q                 : word_t;
 
-    signal opa_0_c               : word_t;
-    signal opa_1_c               : word_t;
-    signal opa_2_c               : word_t;
-    signal opa_3_c               : word_t;
+    signal w_0_d                 : word_t;
+    signal w_1_d                 : word_t;
+    signal w_2_d                 : word_t;
+    signal w_3_d                 : word_t;
 
-    signal opb_0_c               : word_t;
-    signal opb_1_c               : word_t;
-    signal opb_2_c               : word_t;
-    signal opb_3_c               : word_t;
+    signal opa_0                 : word_t;
+    signal opa_1                 : word_t;
+    signal opa_2                 : word_t;
+    signal opa_3                 : word_t;
+
+    signal opb_0                 : word_t;
+    signal opb_1                 : word_t;
+    signal opb_2                 : word_t;
+    signal opb_3                 : word_t;
 
     signal rcon_next_c           : byte_t;
     signal rcon_byte_c           : byte_t;
@@ -111,32 +112,32 @@ architecture arch_aes_kexp of aes_kexp is
 
 begin
 
-    w_in_7_c    <= kexp_key_part_i(7);
-    w_in_6_c    <= kexp_key_part_i(6);
-    w_in_5_c    <= kexp_key_part_i(5);
-    w_in_4_c    <= kexp_key_part_i(4);
-    w_in_3_c    <= kexp_key_part_i(3);
-    w_in_2_c    <= kexp_key_part_i(2);
-    w_in_1_c    <= kexp_key_part_i(1);
-    w_in_0_c    <= kexp_key_part_i(0);
+    w_in_7      <= kexp_key_part_i(7);
+    w_in_6      <= kexp_key_part_i(6);
+    w_in_5      <= kexp_key_part_i(5);
+    w_in_4      <= kexp_key_part_i(4);
+    w_in_3_d    <= kexp_key_part_i(3);
+    w_in_2_d    <= kexp_key_part_i(2);
+    w_in_1_d    <= kexp_key_part_i(1);
+    w_in_0_d    <= kexp_key_part_i(0);
 
-    opb_0_c     <= w_in_7_c;
-    opb_1_c     <= w_in_6_c;
-    opb_2_c     <= w_in_5_c;
-    opb_3_c     <= w_in_4_c;
+    opb_0       <= w_in_7;
+    opb_1       <= w_in_6;
+    opb_2       <= w_in_5;
+    opb_3       <= w_in_4;
 
     --! Word to be expanded
-    tmp_c       <=  w_in_4_c    when ( aes_mode_i = AES_MODE_128_C) else
-                    w_in_0_c    when ( aes_mode_i = AES_MODE_256_C) else
-                    w_in_2_c    when ((aes_mode_i = AES_MODE_192_C) and (kexp_var_en(0) = '1')) else
-                    w_xor(w_xor(w_in_6_c, w_in_7_c), w_in_2_c);
+    tmp_c       <=  w_in_4      when ( aes_mode_i = AES_MODE_128_C) else
+                    w_in_0_d    when ( aes_mode_i = AES_MODE_256_C) else
+                    w_in_2_d    when ((aes_mode_i = AES_MODE_192_C) and (kexp_var_en(0) = '1')) else
+                    w_xor(w_xor(w_in_6, w_in_7), w_in_2_d);
 
-    opa_0_c     <=  w_in_2_c    when ((aes_mode_i = AES_MODE_192_C) and (kexp_var_en(0) = '0')) else elabw_c;
+    opa_0       <=  w_in_2_d    when ((aes_mode_i = AES_MODE_192_C) and (kexp_var_en(0) = '0')) else elabw_c;
 
-    opa_2_c     <=  elabw_c     when ((aes_mode_i = AES_MODE_192_C) and (kexp_var_en(1) = '1')) else tmp_1_c;
+    opa_2       <=  elabw_c     when ((aes_mode_i = AES_MODE_192_C) and (kexp_var_en(1) = '1')) else w_1_d;
 
-    opa_1_c     <=  tmp_0_c;
-    opa_3_c     <=  tmp_2_c;
+    opa_1       <=  w_0_d;
+    opa_3       <=  w_2_d;
 
 
     --! Shift, Rotate, Substitute and xor operations
@@ -154,10 +155,10 @@ begin
     elabw_c     <=  w_xor(rcon_c, subw_c);
 
     --! Execute Xor between expanded and incoming key
-    tmp_0_c     <= w_xor(opa_0_c, opb_0_c);
-    tmp_1_c     <= w_xor(opa_1_c, opb_1_c);
-    tmp_2_c     <= w_xor(opa_2_c, opb_2_c);
-    tmp_3_c     <= w_xor(opa_3_c, opb_3_c);
+    w_0_d       <= w_xor(opa_0, opb_0);
+    w_1_d       <= w_xor(opa_1, opb_1);
+    w_2_d       <= w_xor(opa_2, opb_2);
+    w_3_d       <= w_xor(opa_3, opb_3);
 
     --------------------------------------------------------------------------------
     --! process: Sample new rcon
@@ -179,45 +180,45 @@ begin
     sample_key_p: process(rst_i, clk_i)
     begin
         if(rst_i = '1') then
-            w_0_s   <= RST_WORD_C;
-            w_1_s   <= RST_WORD_C;
-            w_2_s   <= RST_WORD_C;
-            w_3_s   <= RST_WORD_C;
-            w_4_s   <= RST_WORD_C;
-            w_5_s   <= RST_WORD_C;
-            w_6_s   <= RST_WORD_C;
-            w_7_s   <= RST_WORD_C;
+            w_0_q   <= RST_WORD_C;
+            w_1_q   <= RST_WORD_C;
+            w_2_q   <= RST_WORD_C;
+            w_3_q   <= RST_WORD_C;
+            w_4_q   <= RST_WORD_C;
+            w_5_q   <= RST_WORD_C;
+            w_6_q   <= RST_WORD_C;
+            w_7_q   <= RST_WORD_C;
         elsif(rising_edge(clk_i)) then
             if(kexp_dval_i = '1') then
                 if(aes_mode_i = AES_MODE_128_C) then
-                    w_7_s <= tmp_0_c;
-                    w_6_s <= tmp_1_c;
-                    w_5_s <= tmp_2_c;
-                    w_4_s <= tmp_3_c;
+                    w_7_q <= w_0_d;
+                    w_6_q <= w_1_d;
+                    w_5_q <= w_2_d;
+                    w_4_q <= w_3_d;
                 elsif(aes_mode_i = AES_MODE_192_C) then
-                    w_7_s <= w_in_3_c;
-                    w_6_s <= w_in_2_c;
-                    w_5_s <= tmp_0_c;
-                    w_4_s <= tmp_1_c;
-                    w_3_s <= tmp_2_c;
-                    w_2_s <= tmp_3_c;
+                    w_7_q <= w_in_3_d;
+                    w_6_q <= w_in_2_d;
+                    w_5_q <= w_0_d;
+                    w_4_q <= w_1_d;
+                    w_3_q <= w_2_d;
+                    w_2_q <= w_3_d;
                 else
-                    w_7_s <= w_in_3_c;
-                    w_6_s <= w_in_2_c;
-                    w_5_s <= w_in_1_c;
-                    w_4_s <= w_in_0_c;
-                    w_3_s <= tmp_0_c;
-                    w_2_s <= tmp_1_c;
-                    w_1_s <= tmp_2_c;
-                    w_0_s <= tmp_3_c;
+                    w_7_q <= w_in_3_d;
+                    w_6_q <= w_in_2_d;
+                    w_5_q <= w_in_1_d;
+                    w_4_q <= w_in_0_d;
+                    w_3_q <= w_0_d;
+                    w_2_q <= w_1_d;
+                    w_1_q <= w_2_d;
+                    w_0_q <= w_3_d;
                 end if;
             end if;
         end if;
     end process;
 
-    kexp_key_next_part_c    <= (w_7_s, w_6_s, w_5_s, w_4_s, w_3_s, w_2_s, w_1_s, w_0_s);
+    kexp_key_next_part_c    <= (w_7_q, w_6_q, w_5_q, w_4_q, w_3_q, w_2_q, w_1_q, w_0_q);
     kexp_key_next_stage_c   <= (kexp_key_part_i(7), kexp_key_part_i(6), kexp_key_part_i(5), kexp_key_part_i(4));
-    kexp_key_last_stage_c   <= (w_7_s, w_6_s, w_5_s, w_4_s);
+    kexp_key_last_stage_c   <= (w_7_q, w_6_q, w_5_q, w_4_q);
 
     ''')
 
