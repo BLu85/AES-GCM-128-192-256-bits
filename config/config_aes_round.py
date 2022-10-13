@@ -64,7 +64,7 @@ architecture arch_aes_round of aes_round is
             file_lines.append(indent + 'signal cnt_' + tmp_str + ' : round_cnt_t;')
             file_lines.append(indent + 'signal data_' + tmp_str + ': state_t;')
             file_lines.append(  '')
-        tmp_str = str(i) + '_d             '
+        tmp_str = str(i) + '             '
         file_lines.append(indent + 'signal dval_' + tmp_str + ': std_logic;')
         file_lines.append(indent + 'signal cnt_' + tmp_str + ' : round_cnt_t;')
         file_lines.append(indent + 'signal data_' + tmp_str + ': state_t;')
@@ -112,21 +112,21 @@ begin
 
     --! Stall the current pipeline stage if the next stage is stalled and the current stage has valid data
     stage_stall(3)      <= dval_3_q and rnd_next_stage_busy_i and last_loop;
-    stage_stall(2)      <= dval_3_d and stage_stall(3);
-    stage_stall(1)      <= dval_2_d and stage_stall(2);
-    stage_stall(0)      <= dval_1_d and stage_stall(1);
+    stage_stall(2)      <= dval_3   and stage_stall(3);
+    stage_stall(1)      <= dval_2   and stage_stall(2);
+    stage_stall(0)      <= dval_1   and stage_stall(1);
     stage_busy          <= stage_stall(0);
 ''')
 
     # Create the AES stages
     file_lines.append(indent + '--! Create the AES stages')
-    tmp_str =   'data_0_d            <= add_round_key(rnd_stage_data_0, kexp_part_key_i);'
+    tmp_str =   'data_0            <= add_round_key(rnd_stage_data_0, kexp_part_key_i);'
     file_lines.append(indent + tmp_str)
-    tmp_str =   'data_1_d            <= sub_byte(rnd_stage_data_1);'
+    tmp_str =   'data_1            <= sub_byte(rnd_stage_data_1);'
     file_lines.append(indent + tmp_str)
-    tmp_str =   'data_2_d            <= shift_row(rnd_stage_data_2);'
+    tmp_str =   'data_2            <= shift_row(rnd_stage_data_2);'
     file_lines.append(indent + tmp_str)
-    tmp_str =   'data_3_d            <= rnd_stage_data_3 when (cnt_3_d = thr) else mix_columns(rnd_stage_data_3);'
+    tmp_str =   'data_3            <= rnd_stage_data_3 when (cnt_3 = thr) else mix_columns(rnd_stage_data_3);'
     file_lines.append(indent + tmp_str)
     file_lines.append('')
 
@@ -136,29 +136,29 @@ begin
     file_lines.append(indent + 'rnd_stage_data_0    <= rnd_stage_data_i;')
     for i in range(3):
         tmp_str  = 'rnd_stage_data_' + str(i + 1) + '    <= data_' + str(i)
-        tmp_str += '_q;' if AES_CORE_PIPE & (1 << i) else '_d;'
+        tmp_str += '_q;' if AES_CORE_PIPE & (1 << i) else ';'
         file_lines.append(indent + tmp_str)
     file_lines.append('')
 
     # Create counter connections
     file_lines.append(indent + '--! Create the counter connection')
-    file_lines.append(indent + 'cnt_0_d             <= rnd_stage_cnt_i + 1;')
+    file_lines.append(indent + 'cnt_0             <= rnd_stage_cnt_i + 1;')
     for i in range(3):
-        tmp_str  = 'cnt_' + str(i + 1) + '_d             <= cnt_' + str(i)
-        tmp_str += '_q;' if AES_CORE_PIPE & (1 << i) else '_d;'
+        tmp_str  = 'cnt_' + str(i + 1) + '             <= cnt_' + str(i)
+        tmp_str += '_q;' if AES_CORE_PIPE & (1 << i) else ';'
         file_lines.append(indent + tmp_str)
     file_lines.append('')
 
     # Create dval connections
     file_lines.append(indent + '--! Create the dval connection')
-    file_lines.append(indent + 'dval_0_d            <= rnd_stage_val_i;')
+    file_lines.append(indent + 'dval_0            <= rnd_stage_val_i;')
     for i in range(3):
-        tmp_str  = 'dval_' + str(i + 1) + '_d            <= dval_' + str(i)
-        tmp_str += '_q;' if AES_CORE_PIPE & (1 << i) else '_d;'
+        tmp_str  = 'dval_' + str(i + 1) + '            <= dval_' + str(i)
+        tmp_str += '_q;' if AES_CORE_PIPE & (1 << i) else ';'
         file_lines.append(indent + tmp_str)
     file_lines.append('')
 
-    file_lines.append(indent + 'rnd_stage_trg_key   <= \'1\' when ((cnt_3_d /= cnt_3_q) and (stage_stall(3) = \'0\') and (rnd_stage_val_i = \'1\')) else \'0\';')
+    file_lines.append(indent + 'rnd_stage_trg_key   <= \'1\' when ((cnt_3 /= cnt_3_q) and (stage_stall(3) = \'0\') and (rnd_stage_val_i = \'1\')) else \'0\';')
 
     file_lines.append(
 '''
@@ -188,11 +188,11 @@ begin
         if AES_CORE_PIPE & (1 << i):
             tmp_str = str(i)
             file_lines.append(     '            if(stage_stall(' + tmp_str + ') = \'0\') then')
-            file_lines.append(     '                if(dval_' + tmp_str + '_d = \'1\') then')
-            file_lines.append(     '                    cnt_' + tmp_str + '_q  <= cnt_' + tmp_str + '_d;')
-            file_lines.append(     '                    data_' + tmp_str + '_q <= data_' + tmp_str + '_d;')
+            file_lines.append(     '                if(dval_' + tmp_str + ' = \'1\') then')
+            file_lines.append(     '                    cnt_' + tmp_str + '_q  <= cnt_' + tmp_str + ';')
+            file_lines.append(     '                    data_' + tmp_str + '_q <= data_' + tmp_str + ';')
             file_lines.append(     '                end if;')
-            file_lines.append(     '                dval_' + tmp_str + '_q <= dval_' + tmp_str + '_d;')
+            file_lines.append(     '                dval_' + tmp_str + '_q <= dval_' + tmp_str + ';')
             file_lines.append(     '            end if;')
             file_lines.append(     '')
 
@@ -224,7 +224,7 @@ begin
     rnd_stage_val_o         <= stage_val;
 
     --! Index to key expansion
-    rnd_key_index_o         <= cnt_0_d;
+    rnd_key_index_o         <= cnt_0;
 
     --! Next stage index
     rnd_stage_cnt_o         <= cnt_3_q;

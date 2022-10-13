@@ -48,24 +48,24 @@ architecture arch_gcm_ghash of gcm_ghash is
     signal y_q                  : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
     signal y_val                : std_logic;
     signal pkt_val_q            : std_logic;
-    signal eop_d                : std_logic;
+    signal eop                  : std_logic;
     signal sop                  : std_logic;
-    signal h_loaded_d           : std_logic;
+    signal h_loaded             : std_logic;
     signal h_loaded_q           : std_logic;
     signal load_h               : std_logic;
-    signal j0_loaded_d          : std_logic;
+    signal j0_loaded            : std_logic;
     signal j0_loaded_q          : std_logic;
     signal load_j0              : std_logic;
 
     signal aad_val              : std_logic;
     signal aad_len              : natural range 0 to 16;
     signal aad_cnt_q            : std_logic_vector((GCM_DATA_WIDTH_C / 2-3)-1 downto 0);
-    signal aad_cnt_d            : std_logic_vector((GCM_DATA_WIDTH_C / 2-3)-1 downto 0);
+    signal aad_cnt              : std_logic_vector((GCM_DATA_WIDTH_C / 2-3)-1 downto 0);
     signal aad_cnt_en           : std_logic;
 
     signal cipher_val           : std_logic;
     signal cipher_len           : natural range 0 to 16;
-    signal cipher_cnt_d         : std_logic_vector((GCM_DATA_WIDTH_C / 2-3)-1 downto 0);
+    signal cipher_cnt           : std_logic_vector((GCM_DATA_WIDTH_C / 2-3)-1 downto 0);
     signal cipher_cnt_q         : std_logic_vector((GCM_DATA_WIDTH_C / 2-3)-1 downto 0);
 
     signal cipher_cnt_en        : std_logic;
@@ -75,7 +75,7 @@ architecture arch_gcm_ghash of gcm_ghash is
     signal j0_val_q             : std_logic;
     signal cnt_val_q            : std_logic;
     signal ghash_tag_val_q      : std_logic;
-    signal ghash_tag_d          : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
+    signal ghash_tag            : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
     signal ghash_tag_q          : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
 
     signal x_part_0             : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
@@ -107,11 +107,11 @@ begin
         if(rst_i = '1') then
             h_loaded_q <= '0';
         elsif(rising_edge(clk_i)) then
-            h_loaded_q <= h_loaded_d;
+            h_loaded_q <= h_loaded;
         end if;
     end process;
 
-    h_loaded_d <= not(ghash_new_icb_i) and (h_loaded_q or load_h);
+    h_loaded <= not(ghash_new_icb_i) and (h_loaded_q or load_h);
 
     --------------------------------------------------------------------------------
     --! Get H
@@ -137,11 +137,11 @@ begin
         if(rst_i = '1') then
             j0_loaded_q <= '0';
         elsif(rising_edge(clk_i)) then
-            j0_loaded_q <= j0_loaded_d;
+            j0_loaded_q <= j0_loaded;
         end if;
     end process;
 
-    j0_loaded_d <= not(ghash_new_icb_i) and (j0_loaded_q or load_j0);
+    j0_loaded <= not(ghash_new_icb_i) and (j0_loaded_q or load_j0);
 
     --------------------------------------------------------------------------------
     --! Get J0
@@ -185,14 +185,14 @@ begin
             aad_cnt_q <= (others => '0');
         elsif(rising_edge(clk_i)) then
             if(aad_cnt_en = '1') then
-                aad_cnt_q <= aad_cnt_d;
+                aad_cnt_q <= aad_cnt;
             end if;
         end if;
     end process;
 
     aad_cnt_en <= (j0_val_q or aad_val);
 
-    aad_cnt_d  <= (others => '0') when (j0_val_q = '1') else std_logic_vector(unsigned(aad_cnt_q) +
+    aad_cnt    <= (others => '0') when (j0_val_q = '1') else std_logic_vector(unsigned(aad_cnt_q) +
                                                                 to_unsigned(aad_len, aad_cnt_q'length));
 
     --------------------------------------------------------------------------------
@@ -204,14 +204,14 @@ begin
             cipher_cnt_q <= (others => '0');
         elsif(rising_edge(clk_i)) then
             if(cipher_cnt_en = '1') then
-                cipher_cnt_q <= cipher_cnt_d;
+                cipher_cnt_q <= cipher_cnt;
             end if;
         end if;
     end process;
 
     cipher_cnt_en <= (j0_val_q or cipher_val);
 
-    cipher_cnt_d  <= (others => '0') when (j0_val_q = '1') else std_logic_vector(unsigned(cipher_cnt_q) +
+    cipher_cnt    <= (others => '0') when (j0_val_q = '1') else std_logic_vector(unsigned(cipher_cnt_q) +
                                                                     to_unsigned(cipher_len, cipher_cnt_q'length));
 
     --------------------------------------------------------------------------------
@@ -266,8 +266,8 @@ begin
     gf_x        <= x_data xor y_prev;
 
     --! Start/End of packet
-    sop   <= ghash_pkt_val_i and not(pkt_val_q);
-    eop_d <= pkt_val_q and not(ghash_pkt_val_i);
+    sop <= ghash_pkt_val_i and not(pkt_val_q);
+    eop <= pkt_val_q and not(ghash_pkt_val_i);
 
     --------------------------------------------------------------------------------
     --! Sample the ghash tag
@@ -278,13 +278,13 @@ begin
             ghash_tag_q <= (others => '0');
         elsif(rising_edge(clk_i)) then
             if(j0_val_q = '1') then
-                ghash_tag_q <= ghash_tag_d;
+                ghash_tag_q <= ghash_tag;
             end if;
         end if;
     end process;
 
     --! TAG update result
-    ghash_tag_d <= y_q xor J0_q;
+    ghash_tag <= y_q xor J0_q;
 
     --------------------------------------------------------------------------------
     --! Sample valid signals
@@ -298,7 +298,7 @@ begin
             ghash_tag_val_q <= '0';
         elsif(rising_edge(clk_i)) then
             pkt_val_q       <= ghash_pkt_val_i;
-            cnt_val_q       <= eop_d;
+            cnt_val_q       <= eop;
             j0_val_q        <= cnt_val_q;
             ghash_tag_val_q <= j0_val_q;
         end if;

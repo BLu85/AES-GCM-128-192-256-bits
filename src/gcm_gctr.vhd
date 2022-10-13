@@ -56,11 +56,11 @@ architecture arch_gcm_gctr of gcm_gctr is
     signal aes_ecb_val              : std_logic;
     signal aes_ecb_data             : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
     signal gctr_data_mask           : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
-    signal gctr_cipher_text_val_d   : std_logic;
+    signal gctr_cipher_text_val     : std_logic;
     signal gctr_cipher_text_val_q   : std_logic;
-    signal gctr_cipher_text_bval_d  : std_logic_vector(NB_STAGE_C-1 downto 0);
+    signal gctr_cipher_text_bval    : std_logic_vector(NB_STAGE_C-1 downto 0);
     signal gctr_cipher_text_bval_q  : std_logic_vector(NB_STAGE_C-1 downto 0);
-    signal gctr_cipher_text_d       : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
+    signal gctr_cipher_text         : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
     signal gctr_cipher_text_q       : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
     signal gctr_mode                : std_logic_vector(1 downto 0);
     signal gctr_ack                 : std_logic;
@@ -104,8 +104,7 @@ architecture arch_gcm_gctr of gcm_gctr is
 
 begin
 
-    gctr_mode <= gctr_mode_i when (gctr_mode_g = AES_MODE_ALL_C) else
-                   gctr_mode_g;
+    gctr_mode <= gctr_mode_i when (gctr_mode_g = AES_MODE_ALL_C) else gctr_mode_g;
 
     --------------------------------------------------------------------------------
     --! Component instantiation
@@ -140,13 +139,13 @@ begin
             aes_cipher_text_o           => aes_ecb_data,
             aes_ecb_busy_o              => aes_ecb_busy);
 
-    gctr_plain_text_val     <= gctr_icb_start_cnt_i or icb_val;
-    gctr_plain_text         <= ZERO_128_C when (gctr_icb_start_cnt_i = '1') else icb_iv;     --! Create H0 when starting the counter
-    gctr_ack                <= not(ghash_h_loaded_i and ghash_j0_loaded_i) or or_reduce(gctr_plain_text_bval_i);
+    gctr_plain_text_val   <= gctr_icb_start_cnt_i or icb_val;
+    gctr_plain_text       <= ZERO_128_C when (gctr_icb_start_cnt_i = '1') else icb_iv;     --! Create H0 when starting the counter
+    gctr_ack              <= not(ghash_h_loaded_i and ghash_j0_loaded_i) or or_reduce(gctr_plain_text_bval_i);
 
     --! PT can be xor-ed after H0 and J0 have been calculated
-    gctr_cipher_ready       <= aes_ecb_val and ghash_h_loaded_i and ghash_j0_loaded_i;
-    gctr_cipher_text_val_d  <= gctr_cipher_ready and or_reduce(gctr_plain_text_bval_i);
+    gctr_cipher_ready     <= aes_ecb_val and ghash_h_loaded_i and ghash_j0_loaded_i;
+    gctr_cipher_text_val  <= gctr_cipher_ready and or_reduce(gctr_plain_text_bval_i);
 
     --------------------------------------------------------------------------------
     --! Expand one bval bit to one byte
@@ -160,7 +159,7 @@ begin
         end loop;
     end process;
 
-    gctr_cipher_text_d <= (gctr_plain_text_i xor aes_ecb_data) and gctr_data_mask;
+    gctr_cipher_text <= (gctr_plain_text_i xor aes_ecb_data) and gctr_data_mask;
 
     --------------------------------------------------------------------------------
     --! Sample data
@@ -170,8 +169,8 @@ begin
         if(rst_i = '1') then
             gctr_cipher_text_q <= (others => '0');
         elsif(rising_edge(clk_i)) then
-            if(gctr_cipher_text_val_d = '1') then
-                gctr_cipher_text_q <= gctr_cipher_text_d;
+            if(gctr_cipher_text_val = '1') then
+                gctr_cipher_text_q <= gctr_cipher_text;
             end if;
         end if;
     end process;
@@ -181,7 +180,7 @@ begin
         if(rst_i = '1') then
             gctr_cipher_text_val_q <= '0';
         elsif(rising_edge(clk_i)) then
-            gctr_cipher_text_val_q <= gctr_cipher_text_val_d;
+            gctr_cipher_text_val_q <= gctr_cipher_text_val;
         end if;
     end process;
 
@@ -190,11 +189,11 @@ begin
         if(rst_i = '1') then
             gctr_cipher_text_bval_q <= (others => '0');
         elsif(rising_edge(clk_i)) then
-            gctr_cipher_text_bval_q <= gctr_cipher_text_bval_d;
+            gctr_cipher_text_bval_q <= gctr_cipher_text_bval;
         end if;
     end process;
 
-    gctr_cipher_text_bval_d <= gctr_plain_text_bval_i when (gctr_cipher_text_val_d = '1') else (others => '0');
+    gctr_cipher_text_bval <= gctr_plain_text_bval_i when (gctr_cipher_text_val = '1') else (others => '0');
 
     ---------------------------------------------------------------
     aes_ecb_val_o           <= aes_ecb_val;

@@ -57,7 +57,7 @@ architecture arch_aes_kexp of aes_kexp is
 
     --! Signals
 
-    signal key_idx_d           : natural range 0 to ''' + str(n_stages + 1) + ''';
+    signal key_idx             : natural range 0 to ''' + str(n_stages + 1) + ''';
     signal key_idx_q           : natural range 0 to ''' + str(n_stages + 1) + ''';
     signal kexp_key_word_q     : std_logic_vector(AES_128_KEY_WIDTH_C-1 downto 0);
     signal kexp_key_next_stage : state_arr_t(core_num_g downto 0);
@@ -66,7 +66,7 @@ architecture arch_aes_kexp of aes_kexp is
 begin
 
 
-    key_idx_d <= to_integer(unsigned(kexp_key_word_val_i));
+    key_idx <= to_integer(unsigned(kexp_key_word_val_i));
 
     --------------------------------------------------------------------------------
     --! Sample key inputs
@@ -77,7 +77,7 @@ begin
             key_idx_q       <= 0;
             kexp_key_word_q <= (others => '0');
         elsif(rising_edge(clk_i)) then
-            key_idx_q       <= key_idx_d;
+            key_idx_q       <= key_idx;
             kexp_key_word_q <= kexp_key_word_i(AES_256_KEY_WIDTH_C-1 downto AES_128_KEY_WIDTH_C);
         end if;
     end process;

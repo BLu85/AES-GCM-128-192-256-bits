@@ -34,9 +34,9 @@ architecture arch_aes_last_round of aes_last_round is
     --! Types
 
     --! Signals
-    signal stage_val_d          : std_logic;
+    signal stage_val            : std_logic;
     signal stage_val_q          : std_logic;
-    signal stage_data_d         : state_t;
+    signal stage_data           : state_t;
     signal stage_data_q         : state_t;
     signal stage_stall_c        : std_logic;
     signal last_rnd_busy        : std_logic;
@@ -52,11 +52,11 @@ begin
         if(rst_i = '1') then
             stage_val_q  <= '0';
         elsif(rising_edge(clk_i)) then
-            stage_val_q <= stage_val_d;
+            stage_val_q <= stage_val;
         end if;
     end process;
 
-    stage_val_d   <= not(last_rnd_reset_i) and ((stage_val_q and last_rnd_busy) or (last_rnd_val_i and not(last_rnd_busy)));
+    stage_val     <= not(last_rnd_reset_i) and ((stage_val_q and last_rnd_busy) or (last_rnd_val_i and not(last_rnd_busy)));
 
     last_rnd_busy <= stage_val_q and not(last_rnd_ack_i);
 
@@ -69,12 +69,12 @@ begin
             stage_data_q <= (others => (others => (others => '0')));
         elsif(rising_edge(clk_i)) then
             if(stage_val_en = '1') then
-                stage_data_q <= stage_data_d;
+                stage_data_q <= stage_data;
             end if;
         end if;
     end process;
 
-    stage_data_d <= add_round_key(last_rnd_data_i, kexp_last_stage_i);
+    stage_data   <= add_round_key(last_rnd_data_i, kexp_last_stage_i);
 
     stage_val_en <= not(last_rnd_busy) and last_rnd_val_i;
 

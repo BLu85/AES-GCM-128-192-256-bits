@@ -39,12 +39,12 @@ architecture arch_aes_icb of aes_icb is
     signal iv_load_en        : std_logic;
     signal iv_cnt_val        : std_logic;
     signal iv_cnt_val_en     : std_logic;
-    signal iv_val_d          : std_logic;
+    signal iv_val            : std_logic;
     signal iv_val_q          : std_logic;
-    signal iv_cnt_of_d       : std_logic;
+    signal iv_cnt_of         : std_logic;
     signal iv_cnt_of_q       : std_logic;
     signal iv_q              : std_logic_vector(GCM_ICB_WIDTH_C-1 downto 0);
-    signal iv_cnt_d          : std_logic_vector(GCM_CNT_WIDTH_C-1 downto 0);
+    signal iv_cnt            : std_logic_vector(GCM_CNT_WIDTH_C-1 downto 0);
     signal iv_cnt_q          : std_logic_vector(GCM_CNT_WIDTH_C-1 downto 0);
     signal iv_cnt_inc        : std_logic_vector(GCM_CNT_WIDTH_C-1 downto 0);
 
@@ -58,11 +58,11 @@ begin
         if(rst_i = '1') then
             iv_val_q <= '0';
         elsif(rising_edge(clk_i)) then
-            iv_val_q <= iv_val_d;
+            iv_val_q <= iv_val;
         end if;
     end process;
 
-    iv_val_d <= not(icb_stop_cnt_i or iv_cnt_of_d) and (iv_val_q or icb_start_cnt_i);
+    iv_val <= not(icb_stop_cnt_i or iv_cnt_of) and (iv_val_q or icb_start_cnt_i);
 
     --------------------------------------------------------------------------------
     --! Load IV 96-bit
@@ -89,14 +89,14 @@ begin
             iv_cnt_q <= IV_CNT_RST_VALUE_C;
         elsif(rising_edge(clk_i)) then
             if(iv_cnt_val_en = '1') then
-                iv_cnt_q <= iv_cnt_d;
+                iv_cnt_q <= iv_cnt;
             end if;
         end if;
     end process;
 
     iv_cnt_val_en <= (icb_start_cnt_i or iv_cnt_val);
-    iv_cnt_val    <= iv_val_q and not(aes_ecb_busy_i) and not(iv_cnt_of_d);
-    iv_cnt_d      <= IV_CNT_RST_VALUE_C when (icb_start_cnt_i = '1') else iv_cnt_inc;
+    iv_cnt_val    <= iv_val_q and not(aes_ecb_busy_i) and not(iv_cnt_of);
+    iv_cnt        <= IV_CNT_RST_VALUE_C when (icb_start_cnt_i = '1') else iv_cnt_inc;
     iv_cnt_inc    <= iv_cnt_q + 1;
 
     --------------------------------------------------------------------------------
@@ -107,11 +107,11 @@ begin
         if(rst_i = '1') then
             iv_cnt_of_q <= '0';
         elsif(rising_edge(clk_i)) then
-            iv_cnt_of_q <= iv_cnt_of_d;
+            iv_cnt_of_q <= iv_cnt_of;
         end if;
     end process;
 
-    iv_cnt_of_d <= and_reduce(iv_cnt_q);
+    iv_cnt_of <= and_reduce(iv_cnt_q);
 
     ---------------------------------------------------------------
     icb_val_o           <= iv_val_q;
