@@ -386,10 +386,10 @@ def test_dut(dut):
     dut._log.info('AES size: ' + tb.config['aes_size'])
 
     # Release the Reset
-    cocotb.fork(tb.release_rst(RST_WINDOW))
+    cocotb.start_soon(tb.release_rst(RST_WINDOW))
 
     # Start the Clock
-    cocotb.fork(Clock(dut.clk_i, CLK_PERIOD, 'ns').start())
+    cocotb.start_soon(Clock(dut.clk_i, CLK_PERIOD, 'ns').start())
 
     # Wait for the Reset falling edge event
     yield FallingEdge(dut.rst_i)

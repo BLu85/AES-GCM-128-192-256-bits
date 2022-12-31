@@ -105,8 +105,8 @@ class sequencer:
 
     # ======================================================================================
     def start_sequencer(self):
-        pt  = cocotb.fork(self.pt())
-        aad = cocotb.fork(self.aad())
+        pt  = cocotb.start_soon(self.pt())
+        aad = cocotb.start_soon(self.aad())
 
 
 # ======================================================================================
