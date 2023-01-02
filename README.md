@@ -227,10 +227,11 @@ The following command creates an **AES-GCM** DUT with a key size of 192-bits, 6 
 python gcm_testbench.py -m 192 -p 5 -s M -e 500028340 -g
 ```
 
-To re-run the test, the ```--last-test``` parameter can be used:
+To re-run a specific test, the ```--seed``` parameter can be used:
 ```
-python gcm_testbench.py -l
+python gcm_testbench.py -e 912237129
 ```
+The test seed is the file name of the .json file located in the directory ```tb/tmp/```.
 To show the other parameters, run the script with ```--help``` option.
 At the end of the test the **cocotb** table reports tests that passed or failed.
 

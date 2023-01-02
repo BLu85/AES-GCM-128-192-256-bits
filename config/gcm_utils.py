@@ -18,6 +18,11 @@ from argparse          import RawTextHelpFormatter
 class aes_conf(object):
     '''AES funtions for a single block
     '''
+    ip_mode   = ['128', '192', '256']
+    ip_size   = ['XS', 'S', 'M', 'L']
+    ip_pipe   = range(0, 8)
+    test_size = ['small', 'medium', 'big']
+
 
     # ======================================================================================
     def __init__(self, basepath='./', config_ip_only = True):
@@ -38,18 +43,18 @@ class aes_conf(object):
                             help='Configure the AES-GCM IP')
 
         self.parser.add_argument('-v', '--version', action='version',
-                            version='v1.0', help="Show the script version.")
+                            version='v1.1', help="Show the script version.")
 
         self.parser.add_argument('-m', '--mode',
-                            default=None, metavar='MODE', type = lambda s : s.upper(), choices=['128', '192', '256', 'ALL'],
+                            default=None, metavar='MODE', type = lambda s : s.upper(), choices=self.ip_mode,
                             help='Set the GCM mode: choose among 128 (default), 192, or 256.')
 
         self.parser.add_argument('-p', '--pipe',
-                            type=int, default=None, metavar='N', choices=range(0, 8),
+                            type=int, default=None, metavar='N', choices=self.ip_pipe,
                             help='Set the number of pipe stages in the AES round core. E.g.: set -p 7 to get 3 pipe stages (maximum value).')
 
         self.parser.add_argument('-s', '--size',
-                            default=None, metavar='SIZE', choices=['XS', 'S', 'M', 'L'],
+                            default=None, metavar='SIZE', choices=self.ip_size,
                             help='Set the size of the GCM-AES IP. It defines the number of AES rounds:\
                             \nXS = 1 AES round instance,\nS = 2 AES round instances,\
                             \nM = AES round instances are half the number of rounds needed for the specific mode,\
@@ -61,6 +66,10 @@ class aes_conf(object):
 
         if self.config_ip_only == True:
             return
+
+        self.parser.add_argument('-w', '--wipe',
+                            action='store_true',
+                            help='Wipe the tmp folder from all the config files.')
 
         self.parser.add_argument('-c', '--compiler',
                             type=str,
@@ -82,13 +91,17 @@ class aes_conf(object):
                             type=str, nargs='?', const='aes_dump', metavar='file',
                             help='Start a GUI session. Signals are dumped in \'file\'.')
 
-        self.parser.add_argument('-l', '--last-test',
+        self.parser.add_argument('-n', '--n-test',
+                            type=int, default=1, metavar='N',
+                            help='Run N tests.')
+
+        self.parser.add_argument('-r', '--rand-param',
                             action='store_true',
-                            help='Re-run the last test. It will use the same test configuration and seed of the last test run.')
+                            help='Generate random IP parameters.')
 
         self.parser.add_argument('-t', '--tsize',
-                            default=None, metavar='SIZE', choices=['small', 'medium', 'big'],
-                            help='Set the maximum number of byte that can be generated for the AAD and the PT: small (2^10-1), medium (2^20-1), big (2^32-1)')
+                            default=None, metavar='SIZE', choices=self.test_size,
+                            help='Set the maximum number of byte that can be generated for the AAD and the PT: small (2^16-1), medium (2^24-1), big (2^32-1)')
 
         self.parser.add_argument('-d', '--verbose',
                             action='store_true',
@@ -96,36 +109,42 @@ class aes_conf(object):
 
 
     # ======================================================================================
-    def test_config(self, basepath='./'):
+    def create_seed(self):
+        return random.randint(0, 2**32 - 1)
+
+
+    # ======================================================================================
+    def wipe_dir(self, dir):
+        os.system('rm -rv ' + dir)
+        os.system('mkdir -v ' + dir)
+
+
+    # ======================================================================================
+    def test_config(self):
 
         test_size = {   'small'  : 2**16 - 1,
                         'medium' : 2**24 - 1,
-                        'big'    : 2**28 - 1}
+                        'big'    : 2**32 - 1}
 
         basepath = self.basepath + 'tmp/'
 
-        if self.args.last_test == True:
-            # Load the last test configuration and seed
+        if self.args.seed != None:
+            # Load the test with parameter specified in the .json seed file
             if os.path.exists(basepath):
-                files = [f for f in os.listdir(basepath) if f.endswith('.json')]
-                if len(files) != 1:
-                    sys.exit(" >>\tError: there should be only one .json config file when arg \'-l\' is used")
+                files = [str(self.args.seed) + '.json']
 
-                with open(basepath + files[0], 'r') as last_config_file:
+                with open(basepath + files[-1], 'r') as last_config_file:
                     self.conf_param = json.load(last_config_file)
                     last_config_file.close()
             else:
                 sys.exit(" >>\tError: a test must be generated before calling arg \'-l\'. File .json has not been found")
         else:
-            # Create a new configuration
-            os.system('rm -rv ' + basepath)
-            os.system('mkdir -v ' + basepath)
-
             # Create the seed
-            seed = random.randint(0, 2**32 - 1)
-            self.conf_param['seed'] = seed
+            self.conf_param['seed'] = self.create_seed()
 
-        if self.args.tsize != None or self.args.last_test == False:
+        load_ext = bool(self.args.seed == True)
+
+        if self.args.tsize != None or self.args.seed == None:
             if self.args.tsize != None:
                 self.conf_param['test_size'] = self.args.tsize
             else:
@@ -133,7 +152,7 @@ class aes_conf(object):
 
         self.conf_param['max_n_byte'] = test_size[self.conf_param['test_size']]
 
-        if self.args.key != None or self.args.last_test == False:
+        if self.args.key != None or self.args.seed == None:
             if self.args.key != None:
                 if self.args.mode == 'ALL':
                     sys.exit(" >>\tError: Cannot supply a key when mode is set to ALL")
@@ -141,15 +160,17 @@ class aes_conf(object):
                     sys.exit(" >>\tError: AES mode and Key lenght don\'t match")
                 self.conf_param['key'] = self.args.key
             else:
-                self.conf_param['key'] = 'random'
+                # Create a random Key
+                self.conf_param['key'] = ''.join(['{:X}'.format(random.randint(0, 16)) for _ in range(64)])
 
-        if self.args.iv != None or self.args.last_test == False:
+        if self.args.iv != None or self.args.seed == None:
             if self.args.iv != None:
                 self.conf_param['iv'] = self.args.iv
             else:
-                self.conf_param['iv'] = 'random'
+                # Create a random IV
+                self.conf_param['iv'] = ''.join(['{:X}'.format(random.randint(0, 16)) for _ in range(24)])
 
-        if self.args.compiler != None or self.args.last_test == False:
+        if self.args.compiler != None or self.args.seed == None:
             if self.args.compiler != None:
                 self.conf_param['compiler'] = self.args.compiler
             else:
@@ -173,18 +194,13 @@ class aes_conf(object):
                             '192' : 12,
                             '256' : 14}
 
-        if self.config_ip_only == True:
-            last_test = False
-        else:
-            last_test = self.args.last_test
-
-        if self.args.size != None or last_test == False:
+        if self.args.size != None or self.args.seed == None:
             if self.args.size != None:
                 self.conf_param['aes_size'] = self.args.size
             else:
                 self.conf_param['aes_size'] = 'XS'
 
-        if self.args.mode != None or last_test == False:
+        if self.args.mode != None or self.args.seed == None:
             if self.args.mode != None:
                 self.conf_param['aes_mode'] = self.args.mode
             else:
@@ -204,13 +220,14 @@ class aes_conf(object):
             else:
                 self.conf_param['n_rounds'] = aes_n_rounds[self.conf_param['aes_mode']]
 
-        if self.args.pipe != None or last_test == False:
+        if self.args.pipe != None or self.args.seed == None:
             if self.args.pipe != None:
                 self.conf_param['pipes_in_core'] = self.args.pipe
             else:
                 self.conf_param['pipes_in_core'] = 0
 
-        self.conf_param['key_pre_exp'] = self.args.rmexp
+        if self.args.seed == None:
+            self.conf_param['key_pre_exp'] = self.args.rmexp
 
 
     # ======================================================================================
