@@ -1,15 +1,15 @@
 import cocotb
-from cocotb.triggers import RisingEdge, FallingEdge
-from cocotb.binary import BinaryValue as bv
+from cocotb.triggers    import RisingEdge
+from cocotb.binary      import BinaryValue as bv
 
 
 # ======================================================================================
 class aad_driver:
     def __init__(self, clk, bval, data):
 
-        self.clk    = clk
-        self.bval   = bval
-        self.data   = data
+        self.clk  = clk
+        self.bval = bval
+        self.data = data
 
     # ======================================================================================
     @cocotb.coroutine
@@ -35,8 +35,8 @@ class aad_driver:
 # ======================================================================================
 class pkt_driver:
     def __init__(self, clk, pkt):
-        self.clk    = clk
-        self.pkt    = pkt
+        self.clk = clk
+        self.pkt = pkt
 
     @cocotb.coroutine
     def start_pkt(self):
@@ -53,10 +53,10 @@ class pkt_driver:
 class pt_driver:
     def __init__(self, clk, bval, data, ready):
 
-        self.clk    = clk
-        self.bval   = bval
-        self.data   = data
-        self.ready  = ready
+        self.clk   = clk
+        self.bval  = bval
+        self.data  = data
+        self.ready = ready
 
     # ======================================================================================
     @cocotb.coroutine
@@ -86,8 +86,8 @@ class pt_driver:
 # ======================================================================================
 class wait_for:
     def __init__(self, clk, edge):
-        self.clk    = clk
-        self.edge   = edge
+        self.clk  = clk
+        self.edge = edge
 
     # ======================================================================================
     @cocotb.coroutine
@@ -99,31 +99,31 @@ class wait_for:
 # ======================================================================================
 class data_driver:
     def __init__(self, clk, bval, data):
-        self.clk    = clk
-        self.bval   = bval
-        self.data   = data
+        self.clk  = clk
+        self.bval = bval
+        self.data = data
 
 
     # ======================================================================================
     def read(self):
-            val  = self.bval.value.integer
-            data = self.data.value.integer
-            '''
-            Example:
-                    val  = 0xFFC0 <- 10 bits = '1'
-                    data = 0x756A9E2C1904DF026D35000000000000
-                    -----------------------------------------
-                    Only the first 10 bytes from the left are valid
-            '''
-            sel_byte = 0
-            for _ in range(16):
-                if val & 0x8000:
-                    sel_byte += 1
-                    val <<= 1
-                else:
-                    break
+        val  = self.bval.value.integer
+        data = self.data.value.integer
+        '''
+        Example:
+                val  = 0xFFC0 <- 10 bits = '1'
+                data = 0x756A9E2C1904DF026D35000000000000
+                -----------------------------------------
+                Only the first 10 bytes from the left are valid
+        '''
+        sel_byte = 0
+        for _ in range(16):
+            if val & 0x8000:
+                sel_byte += 1
+                val <<= 1
+            else:
+                break
 
-            shift   = 16 - sel_byte
-            data  >>= (shift * 8)
-            block   = data.to_bytes(sel_byte, 'big')
-            return(block)
+        shift   = 16 - sel_byte
+        data  >>= (shift * 8)
+        block   = data.to_bytes(sel_byte, 'big')
+        return(block)

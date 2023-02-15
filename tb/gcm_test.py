@@ -71,7 +71,7 @@ def test_dut(dut):
     yield ClockCycles(dut.clk_i, random.randint(10, 20))
 
     # Create the sequencer
-    seq = sequencer(pkt_drv, aad_drv, pt_drv, delay.n_clk, tb.data, str(tb.config['seed']), aad_tran, pt_tran)
+    seq = sequencer(pkt_drv, aad_drv, pt_drv, delay.n_clk, tb.data, aad_tran, pt_tran)
 
     # Create monitors
     mon_aad = gcm_AAD_monitor("Get AAD", dut, dut_model.load_aad)

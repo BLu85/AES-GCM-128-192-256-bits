@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import sys
 
 N_RND_128 = 11

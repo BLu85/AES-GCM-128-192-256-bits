@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import sys
 
 def generate_aes_top(aes_mode = '128', aes_n_rounds = 1, pipe_stage=0, filepath='./'):

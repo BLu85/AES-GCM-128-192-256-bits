@@ -1,12 +1,8 @@
-#!/usr/bin/python
-
-import argparse
 import gcm_utils as gu
-
 
 if __name__ == "__main__":
 
-    gen_base_path   = '../src/'
+    gen_base_path = '../src/'
 
     # Show args for the IP only
     conf = gu.aes_conf(gen_base_path)

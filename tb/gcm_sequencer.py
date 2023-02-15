@@ -1,15 +1,15 @@
 import cocotb
-import sys
 import random
-from cocotb.triggers import RisingEdge, Event
-from cocotb_bus.monitors import Monitor
-from gcm_driver import data_driver
+
+from cocotb.triggers        import RisingEdge, Event
+from cocotb_bus.monitors    import Monitor
+from gcm_driver             import data_driver
 
 
 # ======================================================================================
 class sequencer:
 
-    def __init__(self, pkt_drv, aad_drv, pt_drv, delay, config, fname, aad_tran, pt_tran):
+    def __init__(self, pkt_drv, aad_drv, pt_drv, delay, config, aad_tran, pt_tran):
 
         self.pkt_drv    = pkt_drv
         self.aad_drv    = aad_drv
@@ -61,7 +61,6 @@ class sequencer:
                     yield self.delay(self.rnd(overlap))
                     # Trigger the Plain Text to start
                     self.end_aad.set("AAD End of data")
-
         else:
             self.end_aad.set("AAD End of data")
 
@@ -105,8 +104,8 @@ class sequencer:
 
     # ======================================================================================
     def start_sequencer(self):
-        pt  = cocotb.start_soon(self.pt())
-        aad = cocotb.start_soon(self.aad())
+        cocotb.start_soon(self.pt())
+        cocotb.start_soon(self.aad())
 
 
 # ======================================================================================
@@ -133,8 +132,8 @@ class gcm_AAD_monitor(Monitor):
         while True:
             if self.aad_bval.value.integer != 0:
 
-                cocotb.log.debug('\tAAD ' + '{:04X}'.format(self.aad_bval.value.integer) + ' '
-                                        + '{:032X}'.format(self.aad_data.value.integer))
+                cocotb.log.debug(f"\tAAD {self.aad_bval.value.integer:04X} " + \
+                                    f"{self.aad_data.value.integer:032X}")
                 aad_block = transaction.read()
                 self._recv(aad_block)
 
@@ -166,8 +165,8 @@ class gcm_PT_monitor(Monitor):
         while True:
             if self.pt_bval.value.integer != 0 and self.rdy.value.integer == 1:
 
-                cocotb.log.debug('\tPT '  + '{:04X}'.format(self.pt_bval.value.integer) + ' '
-                                         + '{:032X}'.format(self.pt_data.value.integer))
+                cocotb.log.debug(f"\tPT {self.pt_bval.value.integer:04X} " + \
+                                    f"{self.pt_data.value.integer:032X}")
                 pt_block = transaction.read()
                 self._recv(pt_block)
 
@@ -198,8 +197,8 @@ class gcm_CT_monitor(Monitor):
         while True:
             if self.ct_bval.value.integer != 0:
 
-                cocotb.log.debug('\tCT '  + '{:04X}'.format(self.ct_bval.value.integer) + ' '
-                                        + '{:032X}'.format(self.ct_data.value.integer))
+                cocotb.log.debug(f"\tCT {self.ct_bval.value.integer:04X} " + \
+                                    f"{self.ct_data.value.integer:032X}")
                 ct_block = transaction.read()
                 self._recv(ct_block)
 
@@ -228,7 +227,7 @@ class gcm_TAG_monitor(Monitor):
             if self.tag_val.value.integer == 1:
 
                 tag = self.tag_data.value.integer
-                cocotb.log.info('DUT\tTAG '  + '{:032X}'.format(tag))
+                cocotb.log.info(f"DUT\tTAG {tag:032X}")
                 self._recv(tag.to_bytes(16, 'big'))
 
             yield RisingEdge(self.clk)

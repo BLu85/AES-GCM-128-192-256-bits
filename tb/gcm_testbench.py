@@ -1,10 +1,6 @@
-#!/usr/bin/python
-
 import os
 import sys
-import argparse
 import random
-import cocotb
 
 sys.path.append('../config/')
 import gcm_utils as gu

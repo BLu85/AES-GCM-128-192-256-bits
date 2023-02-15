@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
-
 import sys
-
 
 def generate_aes_pre_exp_key(key_n_bits = '128', n_rounds = 1, filepath='./'):
     filename = filepath + 'aes_kexp.vhd'

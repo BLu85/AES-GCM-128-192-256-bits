@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import sys
 
 def generate_aes_round(pipe_stage=0, filepath='./'):
