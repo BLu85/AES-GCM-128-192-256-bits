@@ -59,14 +59,14 @@ architecture arch_gcm_ghash of gcm_ghash is
 
     signal aad_val              : std_logic;
     signal aad_len              : natural range 0 to 16;
-    signal aad_cnt_q            : std_logic_vector((GCM_DATA_WIDTH_C / 2-3)-1 downto 0);
-    signal aad_cnt              : std_logic_vector((GCM_DATA_WIDTH_C / 2-3)-1 downto 0);
+    signal aad_cnt_q            : std_logic_vector((GCM_DATA_WIDTH_C / 2 - 3)-1 downto 0);
+    signal aad_cnt              : std_logic_vector((GCM_DATA_WIDTH_C / 2 - 3)-1 downto 0);
     signal aad_cnt_en           : std_logic;
 
     signal cipher_val           : std_logic;
     signal cipher_len           : natural range 0 to 16;
-    signal cipher_cnt           : std_logic_vector((GCM_DATA_WIDTH_C / 2-3)-1 downto 0);
-    signal cipher_cnt_q         : std_logic_vector((GCM_DATA_WIDTH_C / 2-3)-1 downto 0);
+    signal cipher_cnt           : std_logic_vector((GCM_DATA_WIDTH_C / 2 - 3)-1 downto 0);
+    signal cipher_cnt_q         : std_logic_vector((GCM_DATA_WIDTH_C / 2 - 3)-1 downto 0);
 
     signal cipher_cnt_en        : std_logic;
     signal bit_cnt              : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);

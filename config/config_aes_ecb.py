@@ -237,7 +237,7 @@ begin
             clk_i                   => clk_i,
             kexp_key_word_val_i     => aes_key_word_val_i,
             kexp_key_word_i         => aes_key_word_i,
-            kexp_cnt_i              => rnd_stage_cnt_i,
+            kexp_cnt_i              => rnd_stage_cnt_prev,
             kexp_key_next_stage_o   => kexp_key_next_stage,
             kexp_key_last_stage_o   => kexp_key_last_stage
         );''')

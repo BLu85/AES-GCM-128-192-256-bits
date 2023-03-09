@@ -41,7 +41,7 @@ class aes_conf(object):
                             help='Configure the AES-GCM IP')
 
         self.parser.add_argument('-v', '--version', action='version',
-                            version='v1.1', help="Show the script version.")
+                            version='v1.2', help="Show the script version.")
 
         self.parser.add_argument('-m', '--mode',
                             default=None, metavar='MODE', type = lambda s : s.upper(), choices=self.ip_mode,
@@ -52,14 +52,14 @@ class aes_conf(object):
                             help='Set the number of pipe stages in the AES round core. E.g.: set -p 7 to get 3 pipe stages (maximum value).')
 
         self.parser.add_argument('-s', '--size',
-                            default=None, metavar='SIZE', choices=self.ip_size,
+                            default='XS', metavar='SIZE', choices=self.ip_size,
                             help='Set the size of the GCM-AES IP. It defines the number of AES rounds:\
                             \nXS = 1 AES round instance,\nS = 2 AES round instances,\
                             \nM = AES round instances are half the number of rounds needed for the specific mode,\
                             \nL = AES round instances are equal to the number of rounds needed for the specific mode.')
 
         self.parser.add_argument('-x', '--rmexp',
-                            action='store_true',
+                            default=False, action='store_true',
                             help='Remove the logic that expands the key. Expanded key has to be provided externally')
 
         if self.config_ip_only == True:
@@ -140,8 +140,6 @@ class aes_conf(object):
             # Create the seed
             self.conf_param['seed'] = self.create_seed()
 
-        load_ext = bool(self.args.seed == True)
-
         if self.args.tsize != None or self.args.seed == None:
             if self.args.tsize != None:
                 self.conf_param['test_size'] = self.args.tsize
@@ -154,7 +152,10 @@ class aes_conf(object):
             if self.args.key != None:
                 if self.args.mode == 'ALL':
                     sys.exit(" >>\tError: Cannot supply a key when mode is set to ALL")
-                if self.args.mode != str((len(self.args.key)//2)*8):
+                if self.args.mode == None:
+                    if str((len(self.args.key)//2)*8) != '128':
+                        sys.exit(" >>\tError: AES mode and Key lenght don\'t match")
+                elif self.args.mode != str((len(self.args.key)//2)*8):
                     sys.exit(" >>\tError: AES mode and Key lenght don\'t match")
                 self.conf_param['key'] = self.args.key
             else:
@@ -192,13 +193,18 @@ class aes_conf(object):
                             '192' : 12,
                             '256' : 14}
 
-        if self.args.size != None or self.args.seed == None:
+        if hasattr(self.args, 'seed'):
+            seed = self.args.seed
+        else:
+            seed = None
+
+        if self.args.size != None or seed == None:
             if self.args.size != None:
                 self.conf_param['aes_size'] = self.args.size
             else:
                 self.conf_param['aes_size'] = 'XS'
 
-        if self.args.mode != None or self.args.seed == None:
+        if self.args.mode != None or seed == None:
             if self.args.mode != None:
                 self.conf_param['aes_mode'] = self.args.mode
             else:
@@ -218,14 +224,14 @@ class aes_conf(object):
             else:
                 self.conf_param['n_rounds'] = aes_n_rounds[self.conf_param['aes_mode']]
 
-        if self.args.pipe != None or self.args.seed == None:
+        if self.args.pipe != None or seed == None:
             if self.args.pipe != None:
                 self.conf_param['pipes_in_core'] = self.args.pipe
             else:
                 self.conf_param['pipes_in_core'] = 0
 
-        if self.args.seed == None:
-            self.conf_param['key_pre_exp'] = self.args.rmexp
+        if self.args.rmexp != None or seed == None:
+                self.conf_param['key_pre_exp'] = self.args.rmexp
 
 
     # ======================================================================================
@@ -249,6 +255,9 @@ class aes_conf(object):
 
         # Do not save the verbosity
         del self.conf_param['verbose']
+
+        if os.path.exists('./tmp') == False:
+           os.system('mkdir -v tmp')
 
         with open(self.basepath + 'tmp/' + str(self.conf_param['seed']) + '.json', 'w') as config_file:
             json.dump(self.conf_param, config_file, indent=4)

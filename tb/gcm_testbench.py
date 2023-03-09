@@ -16,18 +16,23 @@ if __name__ == "__main__":
     if conf.args.wipe == True:
         conf.wipe_dir(gen_base_path + 'tmp/')
 
+    mode  = conf.args.mode
+    pipe  = conf.args.pipe
+    size  = conf.args.size
+    tsize = conf.args.tsize
+
     for i in range(conf.args.n_test):
 
         # Randomise the IP paramters
         if conf.args.rand_param is True:
             conf.args.last_test = False
-            if conf.args.mode == None:
+            if mode == None:
                 conf.args.mode  = random.choice(conf.ip_mode)
-            if conf.args.pipe == None:
+            if pipe == None:
                 conf.args.pipe  = random.choice(conf.ip_pipe)
-            if conf.args.size == None:
+            if size == None:
                 conf.args.size  = random.choice(conf.ip_size)
-            if conf.args.tsize == None:
+            if tsize == None:
                 conf.args.tsize = random.choice(conf.test_size)
 
         # Configure the test
