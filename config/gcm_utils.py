@@ -41,7 +41,7 @@ class aes_conf(object):
                             help='Configure the AES-GCM IP')
 
         self.parser.add_argument('-v', '--version', action='version',
-                            version='v1.2', help="Show the script version.")
+                            version='v1.3', help="Show the script version.")
 
         self.parser.add_argument('-m', '--mode',
                             default=None, metavar='MODE', type = lambda s : s.upper(), choices=self.ip_mode,
@@ -52,7 +52,7 @@ class aes_conf(object):
                             help='Set the number of pipe stages in the AES round core. E.g.: set -p 7 to get 3 pipe stages (maximum value).')
 
         self.parser.add_argument('-s', '--size',
-                            default='XS', metavar='SIZE', choices=self.ip_size,
+                            default=None, metavar='SIZE', choices=self.ip_size,
                             help='Set the size of the GCM-AES IP. It defines the number of AES rounds:\
                             \nXS = 1 AES round instance,\nS = 2 AES round instances,\
                             \nM = AES round instances are half the number of rounds needed for the specific mode,\
