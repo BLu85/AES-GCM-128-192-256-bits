@@ -23,8 +23,8 @@ entity gcm_ghash is
         aes_ecb_data_i              : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
         ghash_aad_bval_i            : in  std_logic_vector(NB_STAGE_C-1 downto 0);
         ghash_aad_i                 : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
-        ghash_cipher_text_bval_i    : in  std_logic_vector(NB_STAGE_C-1 downto 0);
-        ghash_cipher_text_i         : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
+        ghash_data_in_bval_i        : in  std_logic_vector(NB_STAGE_C-1 downto 0);
+        ghash_data_in_i             : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
         ghash_h_loaded_o            : out std_logic;
         ghash_j0_loaded_o           : out std_logic;
         ghash_tag_val_o             : out std_logic;
@@ -235,14 +235,14 @@ begin
     --------------------------------------------------------------------------------
     --! Calculate the length of the cipher data
     --------------------------------------------------------------------------------
-    cipher_len_p : process(ghash_cipher_text_bval_i)
+    cipher_len_p : process(ghash_data_in_bval_i)
         variable tmp_v : std_logic_vector(NB_STAGE_C-1 downto 0);
     begin
         tmp_v      := (others => '1');
         cipher_len <= 0;
         cipher_val <= '0';
         for i in 0 to NB_STAGE_C-1 loop
-            if(tmp_v = ghash_cipher_text_bval_i) then
+            if(tmp_v = ghash_data_in_bval_i) then
                 cipher_len <= NB_STAGE_C - i;
                 cipher_val <= '1';
             end if;
@@ -255,8 +255,8 @@ begin
     bit_cnt     <= aad_cnt_q & "000" & cipher_cnt_q & "000";
 
     --! Select X input
-    x_data      <= ghash_aad_i          when (aad_val = '1')      else
-                   ghash_cipher_text_i  when (cipher_val = '1')   else
+    x_data      <= ghash_aad_i      when (aad_val = '1')      else
+                   ghash_data_in_i  when (cipher_val = '1')   else
                    bit_cnt;
 
     --! Output from the previous gfmul

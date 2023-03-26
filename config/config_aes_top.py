@@ -28,6 +28,7 @@ entity top_aes_gcm is
         rst_i                           : in  std_logic;
         clk_i                           : in  std_logic;
         aes_gcm_mode_i                  : in  std_logic_vector(1 downto 0);
+        aes_gcm_enc_dec_i               : in  std_logic;
         aes_gcm_pipe_reset_i            : in  std_logic;
         aes_gcm_key_word_val_i          : in  std_logic_vector(3 downto 0);
         aes_gcm_key_word_i              : in  std_logic_vector(AES_256_KEY_WIDTH_C-1 downto 0);
@@ -38,15 +39,15 @@ entity top_aes_gcm is
         aes_gcm_ghash_pkt_val_i         : in  std_logic;
         aes_gcm_ghash_aad_bval_i        : in  std_logic_vector(NB_STAGE_C-1 downto 0);
         aes_gcm_ghash_aad_i             : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
-        aes_gcm_plain_text_bval_i       : in  std_logic_vector(NB_STAGE_C-1 downto 0);
-        aes_gcm_plain_text_i            : in  std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
-        aes_gcm_cipher_ready_o          : out std_logic;
-        aes_gcm_cipher_text_val_o       : out std_logic;
-        aes_gcm_cipher_text_bval_o      : out std_logic_vector(NB_STAGE_C-1 downto 0);
-        aes_gcm_cipher_text_o           : out std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
-        aes_gcm_icb_cnt_overflow_o      : out std_logic;
+        aes_gcm_data_in_bval_i          : in  std_logic_vector(NB_STAGE_C-1 downto 0);
+        aes_gcm_data_in_i               : in  std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
+        aes_gcm_ready_o                 : out std_logic;
+        aes_gcm_data_out_val_o          : out std_logic;
+        aes_gcm_data_out_bval_o         : out std_logic_vector(NB_STAGE_C-1 downto 0);
+        aes_gcm_data_out_o              : out std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
         aes_gcm_ghash_tag_val_o         : out std_logic;
-        aes_gcm_ghash_tag_o             : out std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0));
+        aes_gcm_ghash_tag_o             : out std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
+        aes_gcm_icb_cnt_overflow_o      : out std_logic);
 end entity;
 
 --------------------------------------------------------------------------------
@@ -60,6 +61,7 @@ architecture arch_top_aes_gcm of top_aes_gcm is
             rst_i                           : in  std_logic;
             clk_i                           : in  std_logic;
             aes_gcm_mode_i                  : in  std_logic_vector(1 downto 0);
+            aes_gcm_enc_dec_i               : in  std_logic;
             aes_gcm_pipe_reset_i            : in  std_logic;
             aes_gcm_key_word_val_i          : in  std_logic_vector(3 downto 0);
             aes_gcm_key_word_i              : in  std_logic_vector(AES_256_KEY_WIDTH_C-1 downto 0);
@@ -70,15 +72,15 @@ architecture arch_top_aes_gcm of top_aes_gcm is
             aes_gcm_ghash_pkt_val_i         : in  std_logic;
             aes_gcm_ghash_aad_bval_i        : in  std_logic_vector(NB_STAGE_C-1 downto 0);
             aes_gcm_ghash_aad_i             : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
-            aes_gcm_plain_text_bval_i       : in  std_logic_vector(NB_STAGE_C-1 downto 0);
-            aes_gcm_plain_text_i            : in  std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
-            aes_gcm_cipher_ready_o          : out std_logic;
-            aes_gcm_cipher_text_val_o       : out std_logic;
-            aes_gcm_cipher_text_bval_o      : out std_logic_vector(NB_STAGE_C-1 downto 0);
-            aes_gcm_cipher_text_o           : out std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
-            aes_gcm_icb_cnt_overflow_o      : out std_logic;
+            aes_gcm_data_in_bval_i          : in  std_logic_vector(NB_STAGE_C-1 downto 0);
+            aes_gcm_data_in_i               : in  std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
+            aes_gcm_ready_o                 : out std_logic;
+            aes_gcm_data_out_val_o          : out std_logic;
+            aes_gcm_data_out_bval_o         : out std_logic_vector(NB_STAGE_C-1 downto 0);
+            aes_gcm_data_out_o              : out std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
             aes_gcm_ghash_tag_val_o         : out std_logic;
-            aes_gcm_ghash_tag_o             : out std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0));
+            aes_gcm_ghash_tag_o             : out std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
+            aes_gcm_icb_cnt_overflow_o      : out std_logic);
     end component;
 
 begin
@@ -91,6 +93,7 @@ begin
             rst_i                           => rst_i,
             clk_i                           => clk_i,
             aes_gcm_mode_i                  => aes_gcm_mode_i,
+            aes_gcm_enc_dec_i               => aes_gcm_enc_dec_i,
             aes_gcm_pipe_reset_i            => aes_gcm_pipe_reset_i,
             aes_gcm_key_word_val_i          => aes_gcm_key_word_val_i,
             aes_gcm_key_word_i              => aes_gcm_key_word_i,
@@ -101,15 +104,15 @@ begin
             aes_gcm_ghash_pkt_val_i         => aes_gcm_ghash_pkt_val_i,
             aes_gcm_ghash_aad_bval_i        => aes_gcm_ghash_aad_bval_i,
             aes_gcm_ghash_aad_i             => aes_gcm_ghash_aad_i,
-            aes_gcm_plain_text_bval_i       => aes_gcm_plain_text_bval_i,
-            aes_gcm_plain_text_i            => aes_gcm_plain_text_i,
-            aes_gcm_cipher_ready_o          => aes_gcm_cipher_ready_o,
-            aes_gcm_cipher_text_val_o       => aes_gcm_cipher_text_val_o,
-            aes_gcm_cipher_text_bval_o      => aes_gcm_cipher_text_bval_o,
-            aes_gcm_cipher_text_o           => aes_gcm_cipher_text_o,
-            aes_gcm_icb_cnt_overflow_o      => aes_gcm_icb_cnt_overflow_o,
+            aes_gcm_data_in_bval_i          => aes_gcm_data_in_bval_i,
+            aes_gcm_data_in_i               => aes_gcm_data_in_i,
+            aes_gcm_ready_o                 => aes_gcm_ready_o,
+            aes_gcm_data_out_val_o          => aes_gcm_data_out_val_o,
+            aes_gcm_data_out_bval_o         => aes_gcm_data_out_bval_o,
+            aes_gcm_data_out_o              => aes_gcm_data_out_o,
             aes_gcm_ghash_tag_val_o         => aes_gcm_ghash_tag_val_o,
-            aes_gcm_ghash_tag_o             => aes_gcm_ghash_tag_o);
+            aes_gcm_ghash_tag_o             => aes_gcm_ghash_tag_o,
+            aes_gcm_icb_cnt_overflow_o      => aes_gcm_icb_cnt_overflow_o);
 
 end architecture;
 ''')

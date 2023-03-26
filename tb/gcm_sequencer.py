@@ -27,9 +27,9 @@ class sequencer:
     @cocotb.coroutine
     def aad(self):
 
-        delay_in        = 1 if (self.config['delays'] & 0x10) else 0
-        overlap         = 1 if (self.config['delays'] & 0x08) else 0
-        aad_toggle      = 1 if (self.config['delays'] & 0x04) else 0
+        delay_in        = 1 if (self.config['delays'] & 0x01) else 0
+        aad_toggle      = 1 if (self.config['delays'] & 0x02) else 0
+        overlap         = 1 if (self.config['delays'] & 0x04) else 0
 
         aad_n_blocks    = self.config['aad_n_bytes'] >> 4
         aad_last_block  = 1 if (self.config['aad_n_bytes'] & 0xF) else 0
@@ -52,13 +52,13 @@ class sequencer:
                 yield self.delay(self.rnd(aad_toggle))
                 data = self.aad_tran.pop(0)
                 aad_last_block -= 1
-                if overlap == 0:
+                if overlap == 1:
                     # Trigger the Plain Text to start
                     self.end_aad.set("AAD End of data")
                     yield self.aad_drv.write(data)
                 else:
                     yield self.aad_drv.write(data)
-                    yield self.delay(self.rnd(overlap))
+                    yield self.delay(self.rnd(1))
                     # Trigger the Plain Text to start
                     self.end_aad.set("AAD End of data")
         else:
@@ -72,8 +72,8 @@ class sequencer:
     @cocotb.coroutine
     def pt(self):
 
-        delay_out   = 1 if (self.config['delays'] & 0x02) else 0
-        pt_toggle   = 1 if (self.config['delays'] & 0x01) else 0
+        pt_toggle   = 1 if (self.config['delays'] & 0x08) else 0
+        delay_out   = 1 if (self.config['delays'] & 0x10) else 0
 
         pt_n_blocks = self.config['pt_n_bytes'] >> 4
 
@@ -152,9 +152,9 @@ class gcm_PT_monitor(Monitor):
     def __init__(self, name, dut, callback=None, event=None):
         self.name    = name
         self.clk     = dut.clk_i
-        self.pt_bval = dut.aes_gcm_plain_text_bval_i
-        self.pt_data = dut.aes_gcm_plain_text_i
-        self.rdy     = dut.aes_gcm_cipher_ready_o
+        self.pt_bval = dut.aes_gcm_data_in_bval_i
+        self.pt_data = dut.aes_gcm_data_in_i
+        self.rdy     = dut.aes_gcm_ready_o
         Monitor.__init__(self, callback, event)
 
     # ======================================================================================
@@ -185,8 +185,8 @@ class gcm_CT_monitor(Monitor):
     def __init__(self, name, dut, callback=None, event=None):
         self.name    = name
         self.clk     = dut.clk_i
-        self.ct_bval = dut.aes_gcm_cipher_text_bval_o
-        self.ct_data = dut.aes_gcm_cipher_text_o
+        self.ct_bval = dut.aes_gcm_data_out_bval_o
+        self.ct_data = dut.aes_gcm_data_out_o
         Monitor.__init__(self, callback, event)
 
     # ======================================================================================

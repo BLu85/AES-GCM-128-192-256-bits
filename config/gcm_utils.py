@@ -17,9 +17,10 @@ class aes_conf(object):
     '''AES funtions for a single block
     '''
     ip_mode   = ['128', '192', '256']
+    ip_ed     = ['enc', 'dec']
     ip_size   = ['XS', 'S', 'M', 'L']
     ip_pipe   = range(0, 8)
-    test_size = ['small', 'medium', 'big']
+    test_size = ['short', 'medium', 'long']
 
 
     # ======================================================================================
@@ -41,11 +42,15 @@ class aes_conf(object):
                             help='Configure the AES-GCM IP')
 
         self.parser.add_argument('-v', '--version', action='version',
-                            version='v1.3', help="Show the script version.")
+                            version='v1.4', help="Show the script version.")
 
         self.parser.add_argument('-m', '--mode',
                             default=None, metavar='MODE', type = lambda s : s.upper(), choices=self.ip_mode,
-                            help='Set the GCM mode: choose among 128 (default), 192, or 256.')
+                            help='Set the GCM mode: choose amongst 128 (default), 192, or 256.')
+
+        self.parser.add_argument('-b', '--ed',
+                            type=str, default=None, metavar='ENC DEC', choices=self.ip_ed,
+                            help='Set the IP to encrypt (default) or decrypt incoming data.')
 
         self.parser.add_argument('-p', '--pipe',
                             type=int, default=None, metavar='N', choices=self.ip_pipe,
@@ -99,7 +104,7 @@ class aes_conf(object):
 
         self.parser.add_argument('-t', '--tsize',
                             default=None, metavar='SIZE', choices=self.test_size,
-                            help='Set the maximum number of byte that can be generated for the AAD and the PT: small (2^16-1), medium (2^24-1), big (2^32-1)')
+                            help='Set the maximum number of byte that can be generated for the AAD and the PT: short (2^10-1), medium (2^16-1), long (2^32-1)')
 
         self.parser.add_argument('-d', '--verbose',
                             action='store_true',
@@ -120,9 +125,9 @@ class aes_conf(object):
     # ======================================================================================
     def test_config(self):
 
-        test_size = {   'small'  : 2**16 - 1,
-                        'medium' : 2**24 - 1,
-                        'big'    : 2**32 - 1}
+        test_size = {   'short'  : 2**12 - 1,
+                        'medium' : 2**16 - 1,
+                        'long'   : 2**32 - 1}
 
         basepath = self.basepath + 'tmp/'
 
@@ -144,7 +149,7 @@ class aes_conf(object):
             if self.args.tsize != None:
                 self.conf_param['test_size'] = self.args.tsize
             else:
-                self.conf_param['test_size'] = 'small'
+                self.conf_param['test_size'] = 'short'
 
         self.conf_param['max_n_byte'] = test_size[self.conf_param['test_size']]
 
@@ -210,6 +215,12 @@ class aes_conf(object):
             else:
                 self.conf_param['aes_mode'] = '128'
 
+        if self.args.ed != None or seed == None:
+            if self.args.ed != None:
+                self.conf_param['enc_dec'] = self.args.ed
+            else:
+                self.conf_param['enc_dec'] = 'enc'
+
         if self.conf_param['aes_size'] == 'XS':
             self.conf_param['n_rounds'] = 1
         elif self.conf_param['aes_size'] == 'S':
@@ -251,7 +262,7 @@ class aes_conf(object):
     # ======================================================================================
     def save_configuration(self):
         # Save the verbosity
-        v = self.conf_param['verbose']
+        store_verb = self.conf_param['verbose']
 
         # Do not save the verbosity
         del self.conf_param['verbose']
@@ -264,7 +275,7 @@ class aes_conf(object):
             config_file.close()
 
         # Restore verbosity
-        self.conf_param['verbose'] = v
+        self.conf_param['verbose'] = store_verb
 
 
     # ======================================================================================

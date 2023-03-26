@@ -42,12 +42,12 @@ def test_dut(dut):
     tb.config_data()
 
     # Initialise GCM model
-    dut_model = gcm_model.gcm(tb.data['key'], tb.data['iv'])
+    dut_model = gcm_model.gcm(tb.data['key'], tb.data['iv'], tb.config['enc_dec'])
 
     # Create drivers
     pkt_drv = pkt_driver(dut.clk_i, dut.aes_gcm_ghash_pkt_val_i)
     aad_drv = aad_driver(dut.clk_i, dut.aes_gcm_ghash_aad_bval_i,  dut.aes_gcm_ghash_aad_i)
-    pt_drv  = pt_driver( dut.clk_i, dut.aes_gcm_plain_text_bval_i, dut.aes_gcm_plain_text_i, dut.aes_gcm_cipher_ready_o)
+    pt_drv  = pt_driver( dut.clk_i, dut.aes_gcm_data_in_bval_i, dut.aes_gcm_data_in_i, dut.aes_gcm_ready_o)
 
     # Create delay function
     delay   = wait_for(dut.clk_i, RisingEdge)
@@ -73,20 +73,28 @@ def test_dut(dut):
     # Create the sequencer
     seq = sequencer(pkt_drv, aad_drv, pt_drv, delay.n_clk, tb.data, aad_tran, pt_tran)
 
+    if tb.config['enc_dec'] == 'enc':
+        data_in_callback = dut_model.load_plain_text
+    else:
+        data_in_callback = dut_model.load_cipher_text
+
     # Create monitors
-    mon_aad = gcm_AAD_monitor("Get AAD", dut, dut_model.load_aad)
-    mon_pt  = gcm_PT_monitor("Get PT", dut, dut_model.load_plain_text)
-    mon_ct  = gcm_CT_monitor("Get CT", dut)
-    mon_tag = gcm_TAG_monitor("Get TAG", dut, dut_model.get_tag)
+    mon_aad      = gcm_AAD_monitor("Get AAD", dut, dut_model.load_aad)
+    mon_data_in  = gcm_PT_monitor("Get PT", dut, data_in_callback)
+    mon_data_out = gcm_CT_monitor("Get CT", dut)
+    mon_tag      = gcm_TAG_monitor("Get TAG", dut, dut_model.get_tag)
 
     # Create scoreboard
     scoreboard = Scoreboard(dut)
 
     # Add scoreboard interfaces
     scoreboard.add_interface(mon_aad, aad_model_tran)
-    scoreboard.add_interface(mon_pt,  pt_model_tran)
-    scoreboard.add_interface(mon_ct,  dut_model.ct)
+    scoreboard.add_interface(mon_data_in, pt_model_tran)
+    scoreboard.add_interface(mon_data_out, dut_model.data_out)
     scoreboard.add_interface(mon_tag, dut_model.tag)
+
+    # Set the AES in encryption or decryption mode
+    yield tb.set_enc_dec(tb.config['enc_dec'])
 
     # Set AES key mode
     yield tb.aes_set_mode()
@@ -110,13 +118,13 @@ def test_dut(dut):
     n_transaction = tb.data['aad_n_bytes'] >> 4
     if tb.data['aad_n_bytes'] & 0xF:
         n_transaction += 1
-    dut._log.info('\n' + str(n_transaction) + " AAD transactions to read")
+    dut._log.info(f"\nAAD:\t{n_transaction}\ttransactions to read")
 
     # Set the number of PT transactions
     n_transaction = tb.data['pt_n_bytes'] >> 4
     if tb.data['pt_n_bytes'] & 0xF:
         n_transaction += 1
-    dut._log.info(str(n_transaction) + " PT transactions to read\n")
+    dut._log.info(f"DATA:\t{n_transaction}\ttransactions to read\n")
 
     # Start the sequencer
     seq.start_sequencer()

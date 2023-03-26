@@ -21,6 +21,7 @@ entity aes_gcm is
         rst_i                       : in  std_logic;
         clk_i                       : in  std_logic;
         aes_gcm_mode_i              : in  std_logic_vector(1 downto 0);
+        aes_gcm_enc_dec_i           : in  std_logic;
         aes_gcm_pipe_reset_i        : in  std_logic;
         aes_gcm_key_word_val_i      : in  std_logic_vector(3 downto 0);
         aes_gcm_key_word_i          : in  std_logic_vector(AES_256_KEY_WIDTH_C-1 downto 0);
@@ -31,15 +32,15 @@ entity aes_gcm is
         aes_gcm_ghash_pkt_val_i     : in  std_logic;
         aes_gcm_ghash_aad_bval_i    : in  std_logic_vector(NB_STAGE_C-1 downto 0);
         aes_gcm_ghash_aad_i         : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
-        aes_gcm_plain_text_bval_i   : in  std_logic_vector(NB_STAGE_C-1 downto 0);
-        aes_gcm_plain_text_i        : in  std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
-        aes_gcm_cipher_ready_o      : out std_logic;
-        aes_gcm_cipher_text_val_o   : out std_logic;
-        aes_gcm_cipher_text_bval_o  : out std_logic_vector(NB_STAGE_C-1 downto 0);
-        aes_gcm_cipher_text_o       : out std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
-        aes_gcm_icb_cnt_overflow_o  : out std_logic;
+        aes_gcm_data_in_bval_i      : in  std_logic_vector(NB_STAGE_C-1 downto 0);
+        aes_gcm_data_in_i           : in  std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
+        aes_gcm_ready_o             : out std_logic;
+        aes_gcm_data_out_val_o      : out std_logic;
+        aes_gcm_data_out_bval_o     : out std_logic_vector(NB_STAGE_C-1 downto 0);
+        aes_gcm_data_out_o          : out std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
         aes_gcm_ghash_tag_val_o     : out std_logic;
-        aes_gcm_ghash_tag_o         : out std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0));
+        aes_gcm_ghash_tag_o         : out std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
+        aes_gcm_icb_cnt_overflow_o  : out std_logic);
 end entity;
 
 --------------------------------------------------------------------------------
@@ -52,8 +53,11 @@ architecture arch_aes_gcm of aes_gcm is
     --! Signals
     signal aes_ecb_val            : std_logic;
     signal aes_ecb_data           : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
-    signal gctr_cipher_text_bval  : std_logic_vector(NB_STAGE_C-1 downto 0);
-    signal gctr_cipher_text       : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
+    signal aes_gcm_ready          : std_logic;
+    signal gctr_data_out_bval     : std_logic_vector(NB_STAGE_C-1 downto 0);
+    signal gctr_data_out          : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
+    signal ghash_data_in_bval     : std_logic_vector(NB_STAGE_C-1 downto 0);
+    signal ghash_data_in          : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
     signal ghash_h_loaded         : std_logic;
     signal ghash_j0_loaded        : std_logic;
 
@@ -75,16 +79,16 @@ architecture arch_aes_gcm of aes_gcm is
             gctr_icb_start_cnt_i        : in  std_logic;
             gctr_icb_stop_cnt_i         : in  std_logic;
             gctr_pipe_reset_i           : in  std_logic;
-            gctr_plain_text_bval_i      : in  std_logic_vector(NB_STAGE_C-1 downto 0);
-            gctr_plain_text_i           : in  std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
+            gctr_data_in_bval_i         : in  std_logic_vector(NB_STAGE_C-1 downto 0);
+            gctr_data_in_i              : in  std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
             ghash_h_loaded_i            : in  std_logic;
             ghash_j0_loaded_i           : in  std_logic;
             aes_ecb_val_o               : out std_logic;
             aes_ecb_data_o              : out std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
-            gctr_cipher_ready_o         : out std_logic;
-            gctr_cipher_text_val_o      : out std_logic;
-            gctr_cipher_text_bval_o     : out std_logic_vector(NB_STAGE_C-1 downto 0);
-            gctr_cipher_text_o          : out std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
+            gctr_ready_o                : out std_logic;
+            gctr_data_out_val_o         : out std_logic;
+            gctr_data_out_bval_o        : out std_logic_vector(NB_STAGE_C-1 downto 0);
+            gctr_data_out_o             : out std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
             gctr_icb_cnt_overflow_o     : out std_logic);
     end component;
 
@@ -98,8 +102,8 @@ architecture arch_aes_gcm of aes_gcm is
             aes_ecb_data_i              : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
             ghash_aad_bval_i            : in  std_logic_vector(NB_STAGE_C-1 downto 0);
             ghash_aad_i                 : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
-            ghash_cipher_text_bval_i    : in  std_logic_vector(NB_STAGE_C-1 downto 0);
-            ghash_cipher_text_i         : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
+            ghash_data_in_bval_i        : in  std_logic_vector(NB_STAGE_C-1 downto 0);
+            ghash_data_in_i             : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
             ghash_h_loaded_o            : out std_logic;
             ghash_j0_loaded_o           : out std_logic;
             ghash_tag_val_o             : out std_logic;
@@ -127,18 +131,24 @@ begin
             gctr_icb_start_cnt_i        => aes_gcm_icb_start_cnt_i,
             gctr_icb_stop_cnt_i         => aes_gcm_icb_stop_cnt_i,
             gctr_pipe_reset_i           => aes_gcm_pipe_reset_i,
-            gctr_plain_text_bval_i      => aes_gcm_plain_text_bval_i,
-            gctr_plain_text_i           => aes_gcm_plain_text_i,
+            gctr_data_in_bval_i         => aes_gcm_data_in_bval_i,
+            gctr_data_in_i              => aes_gcm_data_in_i,
             ghash_h_loaded_i            => ghash_h_loaded,
             ghash_j0_loaded_i           => ghash_j0_loaded,
             aes_ecb_val_o               => aes_ecb_val,
             aes_ecb_data_o              => aes_ecb_data,
-            gctr_cipher_ready_o         => aes_gcm_cipher_ready_o,
-            gctr_cipher_text_val_o      => aes_gcm_cipher_text_val_o,
-            gctr_cipher_text_bval_o     => gctr_cipher_text_bval,
-            gctr_cipher_text_o          => gctr_cipher_text,
+            gctr_ready_o                => aes_gcm_ready,
+            gctr_data_out_val_o         => aes_gcm_data_out_val_o,
+            gctr_data_out_bval_o        => gctr_data_out_bval,
+            gctr_data_out_o             => gctr_data_out,
             gctr_icb_cnt_overflow_o     => aes_gcm_icb_cnt_overflow_o
         );
+
+    ghash_data_in_bval <= gctr_data_out_bval     when (aes_gcm_enc_dec_i = '0') else
+                          aes_gcm_data_in_bval_i when (aes_gcm_ready = '1')     else
+                          (others => '0');
+
+    ghash_data_in      <= gctr_data_out when (aes_gcm_enc_dec_i = '0') else aes_gcm_data_in_i;
 
     u_gcm_ghash: gcm_ghash
         port map(
@@ -150,14 +160,15 @@ begin
             aes_ecb_data_i              => aes_ecb_data,
             ghash_aad_bval_i            => aes_gcm_ghash_aad_bval_i,
             ghash_aad_i                 => aes_gcm_ghash_aad_i,
-            ghash_cipher_text_bval_i    => gctr_cipher_text_bval,
-            ghash_cipher_text_i         => gctr_cipher_text,
+            ghash_data_in_bval_i        => ghash_data_in_bval,
+            ghash_data_in_i             => ghash_data_in,
             ghash_h_loaded_o            => ghash_h_loaded,
             ghash_j0_loaded_o           => ghash_j0_loaded,
             ghash_tag_val_o             => aes_gcm_ghash_tag_val_o,
             ghash_tag_o                 => aes_gcm_ghash_tag_o);
 
-    aes_gcm_cipher_text_bval_o <= gctr_cipher_text_bval;
-    aes_gcm_cipher_text_o      <= gctr_cipher_text;
+    aes_gcm_ready_o         <= aes_gcm_ready;
+    aes_gcm_data_out_bval_o <= gctr_data_out_bval;
+    aes_gcm_data_out_o      <= gctr_data_out;
 
 end architecture;

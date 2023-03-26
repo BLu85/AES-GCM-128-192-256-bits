@@ -35,6 +35,7 @@ class gcm_gctr(object):
         self.dut._log.debug("Reset DUT")
         self.dut.rst_i.value                      = 1
         self.dut.aes_gcm_mode_i.value             = 0
+        self.dut.aes_gcm_enc_dec_i.value          = 0
         self.dut.aes_gcm_pipe_reset_i.value       = 0
         self.dut.aes_gcm_icb_stop_cnt_i.value     = 0
         self.dut.aes_gcm_iv_val_i.value           = 0
@@ -43,13 +44,29 @@ class gcm_gctr(object):
         self.dut.aes_gcm_key_word_i.value         = 0
         self.dut.aes_gcm_key_word_val_i.value     = 0
         self.dut.aes_gcm_ghash_pkt_val_i.value    = 0
-        self.dut.aes_gcm_plain_text_i.value       = 0
-        self.dut.aes_gcm_plain_text_bval_i.value  = 0
+        self.dut.aes_gcm_data_in_i.value          = 0
+        self.dut.aes_gcm_data_in_bval_i.value     = 0
         self.dut.aes_gcm_ghash_aad_i.value        = 0
         self.dut.aes_gcm_ghash_aad_bval_i.value   = 0
         yield Timer(duration, 'ns')
         self.dut.rst_i.value                      = 0
         self.dut._log.debug("Reset released")
+
+
+    # ======================================================================================
+    @cocotb.coroutine
+    def set_enc_dec(self, enc_dec):
+        '''
+        Determine if the AES-GCM IP is set in encryption or decryption mode. '''
+
+        if enc_dec == 'enc':
+            self.dut.aes_gcm_enc_dec_i.value = 0
+        else:
+            self.dut.aes_gcm_enc_dec_i.value = 1
+
+        self.dut._log.info(f"Set the AES IP in {enc_dec}ryption mode.")
+
+        yield RisingEdge(self.dut.clk_i)
 
 
     # ======================================================================================
@@ -198,7 +215,7 @@ class gcm_gctr(object):
         Wait for the AES to Produce H0 and J0. This can be avoided
         if the AES pipeline has the same size of the AES number of rounds '''
 
-        while self.dut.aes_gcm_cipher_ready_o.value == 0:
+        while self.dut.aes_gcm_ready_o.value == 0:
             yield RisingEdge(self.dut.clk_i)
 
 
@@ -246,7 +263,7 @@ class gcm_gctr(object):
         # Number of byte for AAD and PT
         for i in range(2):
             n_bytes = int(random.betavariate(.1, .1) * self.config['max_n_byte'])
-            self.dut._log.info("\n" + _name[i] + ": byte to generate: " + str(n_bytes))
+            self.dut._log.info(f"{_name[i]}: byte to generate: {n_bytes}")
             _bytes[_name[i]] = n_bytes
 
         self.data.update(_bytes)
@@ -255,9 +272,15 @@ class gcm_gctr(object):
         #   bit-0 : inserts a delay between the start of the packet and the first AAD data
         #   bit-1 : inserts a delay between an AAD data and the next one
         #   bit-2 : inserts a delay between the last AAD data and the first PT data
-        #   bit-3 : inserts a delay between the last AAD data and the first PT data
-        #   bit-4 : inserts a delay between the last PT data and the end of the packet
+        #   bit-3 : inserts a delay between a Data in and the next one
+        #   bit-4 : inserts a delay between the last Data in and the end of the packet
         self.data['delays'] = random.randint(0, 31)
+
+        # N.B. When decrypting, there cannot be an overlap of the AAD and the CT.
+        #      AAD+CT is the stream of data that enters the GHASH.
+        #      Therefore, in this case bit-2 needs to be 0.
+        if self.config['enc_dec'] == 'dec':
+            self.data['delays'] &= ~(1 << 2)
 
 
     # ======================================================================================

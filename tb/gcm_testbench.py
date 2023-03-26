@@ -20,6 +20,7 @@ if __name__ == "__main__":
     pipe  = conf.args.pipe
     size  = conf.args.size
     tsize = conf.args.tsize
+    ip_ed = conf.args.ed
 
     for i in range(conf.args.n_test):
 
@@ -28,6 +29,8 @@ if __name__ == "__main__":
             conf.args.last_test = False
             if mode == None:
                 conf.args.mode  = random.choice(conf.ip_mode)
+            if ip_ed == None:
+                conf.args.ed    = random.choice(conf.ip_ed)
             if pipe == None:
                 conf.args.pipe  = random.choice(conf.ip_pipe)
             if size == None:
