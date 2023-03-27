@@ -87,9 +87,11 @@ If the **AES-GCM** is set in encryption mode, the incoming data are treated as _
         │       ├── aes_round
         │       └── aes_last_round
         │
-        └── gcm_ghash
-            │
-            └── ghash_gfmul
+        ├── gcm_ghash
+        |   │
+        |   └── ghash_gfmul
+        │
+        └── aes_enc_dec_ctrl
 
 ### IP blocks: short description
 
@@ -102,6 +104,7 @@ If the **AES-GCM** is set in encryption mode, the incoming data are treated as _
 * **aes_last_round**: the module performs the last encryption round.
 * **gcm_ghash**: the module receives the **AAD** and the **CT** and computes the **TAG** used to authenticate the message. It is composed of the **gcm_gf_mul** sub-module.
 * **gcm_gf_mul**: the module performs the multiplication in a binary _Galois Field_.
+* **aes_enc_dec_ctrl**: the module drives the _data valid_ signals for the  **GHASH** module.
 
 ## IP configuration
 

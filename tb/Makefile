@@ -27,6 +27,7 @@ VHDL_SOURCES += $(SRCDIR)/aes_icb.vhd
 VHDL_SOURCES += $(SRCDIR)/gcm_gctr.vhd
 VHDL_SOURCES += $(SRCDIR)/ghash_gfmul.vhd
 VHDL_SOURCES += $(SRCDIR)/gcm_ghash.vhd
+VHDL_SOURCES += $(SRCDIR)/aes_enc_dec_ctrl.vhd
 VHDL_SOURCES += $(SRCDIR)/aes_gcm.vhd
 VHDL_SOURCES += $(BUILDIR)/top_aes_gcm.vhd
 

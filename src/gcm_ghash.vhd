@@ -21,10 +21,12 @@ entity gcm_ghash is
         ghash_new_icb_i             : in  std_logic;
         aes_ecb_val_i               : in  std_logic;
         aes_ecb_data_i              : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
+        ghash_aad_val_i             : in  std_logic;
         ghash_aad_bval_i            : in  std_logic_vector(NB_STAGE_C-1 downto 0);
         ghash_aad_i                 : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
-        ghash_data_in_bval_i        : in  std_logic_vector(NB_STAGE_C-1 downto 0);
-        ghash_data_in_i             : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
+        ghash_ct_val_i              : in  std_logic;
+        ghash_ct_bval_i             : in  std_logic_vector(NB_STAGE_C-1 downto 0);
+        ghash_ct_i                  : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
         ghash_h_loaded_o            : out std_logic;
         ghash_j0_loaded_o           : out std_logic;
         ghash_tag_val_o             : out std_logic;
@@ -63,12 +65,12 @@ architecture arch_gcm_ghash of gcm_ghash is
     signal aad_cnt              : std_logic_vector((GCM_DATA_WIDTH_C / 2 - 3)-1 downto 0);
     signal aad_cnt_en           : std_logic;
 
-    signal cipher_val           : std_logic;
-    signal cipher_len           : natural range 0 to 16;
-    signal cipher_cnt           : std_logic_vector((GCM_DATA_WIDTH_C / 2 - 3)-1 downto 0);
-    signal cipher_cnt_q         : std_logic_vector((GCM_DATA_WIDTH_C / 2 - 3)-1 downto 0);
+    signal ct_val               : std_logic;
+    signal ct_len               : natural range 0 to 16;
+    signal ct_cnt               : std_logic_vector((GCM_DATA_WIDTH_C / 2 - 3)-1 downto 0);
+    signal ct_cnt_q             : std_logic_vector((GCM_DATA_WIDTH_C / 2 - 3)-1 downto 0);
 
-    signal cipher_cnt_en        : std_logic;
+    signal ct_cnt_en            : std_logic;
     signal bit_cnt              : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
     signal x_data               : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
     signal y_prev               : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
@@ -174,7 +176,7 @@ begin
         end if;
     end process;
 
-    y_val <= cnt_val_q or (ghash_pkt_val_i and aad_val) or (pkt_val_q and cipher_val);
+    y_val <= cnt_val_q or (ghash_aad_val_i and aad_val) or (ghash_ct_val_i and ct_val);
 
     --------------------------------------------------------------------------------
     --! aad lenght
@@ -201,18 +203,18 @@ begin
     ct_length_p : process(rst_i, clk_i)
     begin
         if(rst_i = '1') then
-            cipher_cnt_q <= (others => '0');
+            ct_cnt_q <= (others => '0');
         elsif(rising_edge(clk_i)) then
-            if(cipher_cnt_en = '1') then
-                cipher_cnt_q <= cipher_cnt;
+            if(ct_cnt_en = '1') then
+                ct_cnt_q <= ct_cnt;
             end if;
         end if;
     end process;
 
-    cipher_cnt_en <= (j0_val_q or cipher_val);
+    ct_cnt_en <= (j0_val_q or ct_val);
 
-    cipher_cnt    <= (others => '0') when (j0_val_q = '1') else std_logic_vector(unsigned(cipher_cnt_q) +
-                                                                    to_unsigned(cipher_len, cipher_cnt_q'length));
+    ct_cnt    <= (others => '0') when (j0_val_q = '1') else std_logic_vector(unsigned(ct_cnt_q) +
+                                                                to_unsigned(ct_len, ct_cnt_q'length));
 
     --------------------------------------------------------------------------------
     --! Calculate the length of the aad data
@@ -235,16 +237,16 @@ begin
     --------------------------------------------------------------------------------
     --! Calculate the length of the cipher data
     --------------------------------------------------------------------------------
-    cipher_len_p : process(ghash_data_in_bval_i)
+    ct_len_p : process(ghash_ct_bval_i)
         variable tmp_v : std_logic_vector(NB_STAGE_C-1 downto 0);
     begin
         tmp_v      := (others => '1');
-        cipher_len <= 0;
-        cipher_val <= '0';
+        ct_len <= 0;
+        ct_val <= '0';
         for i in 0 to NB_STAGE_C-1 loop
-            if(tmp_v = ghash_data_in_bval_i) then
-                cipher_len <= NB_STAGE_C - i;
-                cipher_val <= '1';
+            if(tmp_v = ghash_ct_bval_i) then
+                ct_len <= NB_STAGE_C - i;
+                ct_val <= '1';
             end if;
             tmp_v(i) := '0';
         end loop;
@@ -252,22 +254,22 @@ begin
 
     --------------------------------------------------------------------------------
     --! Bit counter: minimum size increment is 1 byte
-    bit_cnt     <= aad_cnt_q & "000" & cipher_cnt_q & "000";
+    bit_cnt <= aad_cnt_q & "000" & ct_cnt_q & "000";
 
     --! Select X input
-    x_data      <= ghash_aad_i      when (aad_val = '1')      else
-                   ghash_data_in_i  when (cipher_val = '1')   else
-                   bit_cnt;
+    x_data  <= ghash_aad_i when (aad_val = '1')  else
+               ghash_ct_i  when (ct_val = '1')   else
+               bit_cnt;
 
     --! Output from the previous gfmul
-    y_prev      <= (others => '0') when (sop = '1') else y_q;
+    y_prev  <= (others => '0') when (sop = '1') else y_q;
 
     --! gfmul: X input
-    gf_x        <= x_data xor y_prev;
+    gf_x    <= x_data xor y_prev;
 
     --! Start/End of packet
-    sop <= ghash_pkt_val_i and not(pkt_val_q);
-    eop <= pkt_val_q and not(ghash_pkt_val_i);
+    sop     <= ghash_pkt_val_i and not(pkt_val_q);
+    eop     <= pkt_val_q and not(ghash_pkt_val_i);
 
     --------------------------------------------------------------------------------
     --! Sample the ghash tag
