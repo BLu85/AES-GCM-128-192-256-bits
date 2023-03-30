@@ -79,7 +79,6 @@ architecture arch_aes_round of aes_round is
     signal stage_stall          : std_logic_vector(3 downto 0);
     signal stage_busy           : std_logic;
     signal rnd_stage_trg_key    : std_logic;
-    signal key_var_en           : std_logic_vector(1 downto 0);
 
 begin
 

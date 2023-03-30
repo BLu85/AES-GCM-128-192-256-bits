@@ -38,7 +38,6 @@ architecture arch_aes_last_round of aes_last_round is
     signal stage_val_q          : std_logic;
     signal stage_data           : state_t;
     signal stage_data_q         : state_t;
-    signal stage_stall_c        : std_logic;
     signal last_rnd_busy        : std_logic;
     signal stage_val_en         : std_logic;
 
