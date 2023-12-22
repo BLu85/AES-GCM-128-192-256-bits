@@ -203,23 +203,12 @@ class aes_conf(object):
         else:
             seed = None
 
-        if self.args.size != None or seed == None:
-            if self.args.size != None:
-                self.conf_param['aes_size'] = self.args.size
-            else:
-                self.conf_param['aes_size'] = 'XS'
+        self.set_default_value(self.args.size, seed, 'aes_size', 'XS')
 
-        if self.args.mode != None or seed == None:
-            if self.args.mode != None:
-                self.conf_param['aes_mode'] = self.args.mode
-            else:
-                self.conf_param['aes_mode'] = '128'
+        self.set_default_value(self.args.mode, seed, 'aes_mode', '128')
 
-        if self.args.ed != None or seed == None:
-            if self.args.ed != None:
-                self.conf_param['enc_dec'] = self.args.ed
-            else:
-                self.conf_param['enc_dec'] = 'enc'
+        self.set_default_value(self.args.ed, seed, 'enc_dec', 'enc')
+
 
         if self.conf_param['aes_size'] == 'XS':
             self.conf_param['n_rounds'] = 1
@@ -235,11 +224,7 @@ class aes_conf(object):
             else:
                 self.conf_param['n_rounds'] = aes_n_rounds[self.conf_param['aes_mode']]
 
-        if self.args.pipe != None or seed == None:
-            if self.args.pipe != None:
-                self.conf_param['pipes_in_core'] = self.args.pipe
-            else:
-                self.conf_param['pipes_in_core'] = 0
+        self.set_default_value(self.args.pipe, seed, 'pipes_in_core', 0)
 
         if self.args.rmexp != None or seed == None:
                 self.conf_param['key_pre_exp'] = self.args.rmexp
@@ -308,3 +293,12 @@ class aes_conf(object):
                           self.conf_param['n_rounds'],
                           self.conf_param['pipes_in_core'],
                           gen_rtl_path)
+
+    # ======================================================================================
+    def set_default_value(self, arg, seed, pname, value):
+        # Set the default value for the configuration entry
+        if arg != None or seed == None:
+            if arg != None:
+                self.conf_param[pname] = arg
+            else:
+                self.conf_param[pname] = value
