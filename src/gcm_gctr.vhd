@@ -55,7 +55,6 @@ architecture arch_gcm_gctr of gcm_gctr is
     signal aes_ecb_busy             : std_logic;
     signal aes_ecb_val              : std_logic;
     signal aes_ecb_data             : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
-    signal gctr_data_mask           : std_logic_vector(AES_DATA_WIDTH_C-1 downto 0);
     signal gctr_data_out_val        : std_logic;
     signal gctr_data_out_val_q      : std_logic;
     signal gctr_data_out_bval       : std_logic_vector(NB_STAGE_C-1 downto 0);
@@ -146,20 +145,7 @@ begin
     --! PT can be xor-ed after H0 and J0 have been calculated
     gctr_ready         <= aes_ecb_val and ghash_h_loaded_i and ghash_j0_loaded_i;
     gctr_data_out_val  <= gctr_ready and or_reduce(gctr_data_in_bval_i);
-
-    --------------------------------------------------------------------------------
-    --! Expand one bval bit to one byte
-    --------------------------------------------------------------------------------
-    cipher_mask_p : process(gctr_data_in_bval_i)
-    begin
-        for i in 0 to NB_STAGE_C-1 loop
-            for j in 0 to 7 loop
-                gctr_data_mask((i * 8) + j) <= gctr_data_in_bval_i(i);
-            end loop;
-        end loop;
-    end process;
-
-    gctr_data_out    <= (gctr_data_in_i xor aes_ecb_data) and gctr_data_mask;
+    gctr_data_out      <= gctr_data_in_i xor aes_ecb_data;
 
     --------------------------------------------------------------------------------
     --! Sample data

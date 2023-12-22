@@ -71,7 +71,11 @@ architecture arch_gcm_ghash of gcm_ghash is
     signal cnt_sel              : std_logic_vector((GCM_DATA_WIDTH_C / 2 - 3)-1 downto 0);
     signal bval_val             : std_logic;
     signal bval_sel             : std_logic_vector(NB_STAGE_C-1 downto 0);
+    signal data_val             : std_logic;
 
+    signal ghash_data_masked    : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
+    signal ghash_data_mask      : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
+    signal ghash_data_sel       : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
     signal bit_cnt              : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
     signal x_data               : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
     signal y_prev               : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
@@ -217,23 +221,23 @@ begin
     bval_len_p : process(bval_sel)
     begin
         case (bval_sel) is
-            when x"8000" => bval_len <=  1;     bval_val <= '1';
-            when x"C000" => bval_len <=  2;     bval_val <= '1';
-            when x"E000" => bval_len <=  3;     bval_val <= '1';
-            when x"F000" => bval_len <=  4;     bval_val <= '1';
-            when x"F800" => bval_len <=  5;     bval_val <= '1';
-            when x"FC00" => bval_len <=  6;     bval_val <= '1';
-            when x"FE00" => bval_len <=  7;     bval_val <= '1';
-            when x"FF00" => bval_len <=  8;     bval_val <= '1';
-            when x"FF80" => bval_len <=  9;     bval_val <= '1';
-            when x"FFC0" => bval_len <= 10;     bval_val <= '1';
-            when x"FFE0" => bval_len <= 11;     bval_val <= '1';
-            when x"FFF0" => bval_len <= 12;     bval_val <= '1';
-            when x"FFF8" => bval_len <= 13;     bval_val <= '1';
-            when x"FFFC" => bval_len <= 14;     bval_val <= '1';
-            when x"FFFE" => bval_len <= 15;     bval_val <= '1';
-            when x"FFFF" => bval_len <= 16;     bval_val <= '1';
-            when others  => bval_len <=  0;     bval_val <= '0';
+            when x"8000" => bval_len <=  1; bval_val <= '1'; ghash_data_mask <= x"FF000000000000000000000000000000";
+            when x"C000" => bval_len <=  2; bval_val <= '1'; ghash_data_mask <= x"FFFF0000000000000000000000000000";
+            when x"E000" => bval_len <=  3; bval_val <= '1'; ghash_data_mask <= x"FFFFFF00000000000000000000000000";
+            when x"F000" => bval_len <=  4; bval_val <= '1'; ghash_data_mask <= x"FFFFFFFF000000000000000000000000";
+            when x"F800" => bval_len <=  5; bval_val <= '1'; ghash_data_mask <= x"FFFFFFFFFF0000000000000000000000";
+            when x"FC00" => bval_len <=  6; bval_val <= '1'; ghash_data_mask <= x"FFFFFFFFFFFF00000000000000000000";
+            when x"FE00" => bval_len <=  7; bval_val <= '1'; ghash_data_mask <= x"FFFFFFFFFFFFFF000000000000000000";
+            when x"FF00" => bval_len <=  8; bval_val <= '1'; ghash_data_mask <= x"FFFFFFFFFFFFFFFF0000000000000000";
+            when x"FF80" => bval_len <=  9; bval_val <= '1'; ghash_data_mask <= x"FFFFFFFFFFFFFFFFFF00000000000000";
+            when x"FFC0" => bval_len <= 10; bval_val <= '1'; ghash_data_mask <= x"FFFFFFFFFFFFFFFFFFFF000000000000";
+            when x"FFE0" => bval_len <= 11; bval_val <= '1'; ghash_data_mask <= x"FFFFFFFFFFFFFFFFFFFFFF0000000000";
+            when x"FFF0" => bval_len <= 12; bval_val <= '1'; ghash_data_mask <= x"FFFFFFFFFFFFFFFFFFFFFFFF00000000";
+            when x"FFF8" => bval_len <= 13; bval_val <= '1'; ghash_data_mask <= x"FFFFFFFFFFFFFFFFFFFFFFFFFF000000";
+            when x"FFFC" => bval_len <= 14; bval_val <= '1'; ghash_data_mask <= x"FFFFFFFFFFFFFFFFFFFFFFFFFFFF0000";
+            when x"FFFE" => bval_len <= 15; bval_val <= '1'; ghash_data_mask <= x"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00";
+            when x"FFFF" => bval_len <= 16; bval_val <= '1'; ghash_data_mask <= x"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+            when others  => bval_len <= 16; bval_val <= '0'; ghash_data_mask <= x"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
         end case;
     end process;
 
@@ -242,16 +246,20 @@ begin
     bval_cnt <= (others => '0') when (j0_val_q = '1') else
                     std_logic_vector(unsigned(cnt_sel) + to_unsigned(bval_len, bval_cnt'length));
 
-    cnt_sel  <= aad_cnt_q when (aad_val = '1') else ct_cnt_q;
+    cnt_sel  <= aad_cnt_q when (ghash_aad_val_i = '1') else ct_cnt_q;
 
     --------------------------------------------------------------------------------
     --! Bit counter: minimum size increment is 1 byte
-    bit_cnt <= aad_cnt_q & "000" & ct_cnt_q & "000";
+    bit_cnt           <= aad_cnt_q & "000" & ct_cnt_q & "000";
+
+    ghash_data_sel    <= ghash_aad_i when (ghash_aad_val_i = '1') else ghash_ct_i;
+
+    ghash_data_masked <= ghash_data_sel and ghash_data_mask;
+
+    data_val          <= ghash_aad_val_i or ghash_ct_val_i;
 
     --! Select X input
-    x_data  <= ghash_aad_i when (aad_val = '1')  else
-               ghash_ct_i  when (ct_val = '1')   else
-               bit_cnt;
+    x_data  <= ghash_data_masked when (data_val = '1') else bit_cnt;
 
     --! Output from the previous gfmul
     y_prev  <= (others => '0') when (sop = '1') else y_q;

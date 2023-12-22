@@ -19,16 +19,16 @@ class aad_driver:
         The function assert the packet valid and starts loading data in
         chuncks of 128 bit wide
         '''
-        self.aad_data = bv(n_bits=128)
-        self.aad_bval = bv(n_bits=16)
+        aad_data = bv(n_bits=128)
+        aad_bval = bv(n_bits=16)
 
         # Load the AAD
         n_bits = len(aad) * 8
-        self.aad_data.assign('{:0{width}b}'.format(int.from_bytes(aad, "big"), width=n_bits))
-        self.aad_bval.assign((n_bits // 8) * '1')
+        aad_data.assign('{:0{width}b}'.format(int.from_bytes(aad, "big"), width=n_bits))
+        aad_bval.assign((n_bits // 8) * '1')
 
-        self.data.value = self.aad_data.get_value()
-        self.bval.value = self.aad_bval.get_value()
+        self.data.value = aad_data.get_value()
+        self.bval.value = aad_bval.get_value()
         yield RisingEdge(self.clk)
         self.bval.value = 0
 
@@ -68,15 +68,15 @@ class pt_driver:
         of the first PT block. Another delay could be inserted between the last
         loaded PT block and the falling edge of the packet valid.
         '''
-        self.pt_data = bv(n_bits=128)
-        self.pt_dval = bv(n_bits=16)
+        pt_data = bv(n_bits=128)
+        pt_dval = bv(n_bits=16)
 
         n_bits = len(pt) * 8
-        self.pt_data.assign('{:0{width}b}'.format(int.from_bytes(pt, "big"), width=n_bits))
-        self.pt_dval.assign((n_bits // 8) * '1')
+        pt_data.assign('{:0{width}b}'.format(int.from_bytes(pt, "big"), width=n_bits))
+        pt_dval.assign((n_bits // 8) * '1')
 
-        self.data.value = self.pt_data.get_value()
-        self.bval.value = self.pt_dval.get_value()
+        self.data.value = pt_data.get_value()
+        self.bval.value = pt_dval.get_value()
         yield RisingEdge(self.clk)
         while (self.ready.value != 1):
             yield RisingEdge(self.clk)
