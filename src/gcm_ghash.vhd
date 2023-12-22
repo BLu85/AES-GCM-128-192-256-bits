@@ -8,7 +8,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use ieee.std_logic_misc.or_reduce;
 use work.aes_pkg.NB_STAGE_C;
 use work.gcm_pkg.all;
 
@@ -60,17 +59,19 @@ architecture arch_gcm_ghash of gcm_ghash is
     signal load_j0              : std_logic;
 
     signal aad_val              : std_logic;
-    signal aad_len              : natural range 0 to 16;
     signal aad_cnt_q            : std_logic_vector((GCM_DATA_WIDTH_C / 2 - 3)-1 downto 0);
-    signal aad_cnt              : std_logic_vector((GCM_DATA_WIDTH_C / 2 - 3)-1 downto 0);
     signal aad_cnt_en           : std_logic;
 
     signal ct_val               : std_logic;
-    signal ct_len               : natural range 0 to 16;
-    signal ct_cnt               : std_logic_vector((GCM_DATA_WIDTH_C / 2 - 3)-1 downto 0);
     signal ct_cnt_q             : std_logic_vector((GCM_DATA_WIDTH_C / 2 - 3)-1 downto 0);
-
     signal ct_cnt_en            : std_logic;
+
+    signal bval_len             : natural range 0 to 16;
+    signal bval_cnt             : std_logic_vector((GCM_DATA_WIDTH_C / 2 - 3)-1 downto 0);
+    signal cnt_sel              : std_logic_vector((GCM_DATA_WIDTH_C / 2 - 3)-1 downto 0);
+    signal bval_val             : std_logic;
+    signal bval_sel             : std_logic_vector(NB_STAGE_C-1 downto 0);
+
     signal bit_cnt              : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
     signal x_data               : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
     signal y_prev               : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
@@ -84,8 +85,6 @@ architecture arch_gcm_ghash of gcm_ghash is
     signal x_part_1             : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
     signal y_part_0             : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
     signal y_part_1             : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
-    signal h_part_0             : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
-    signal h_part_1             : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
     signal y_part               : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
 
     --------------------------------------------------------------------------------
@@ -176,7 +175,7 @@ begin
         end if;
     end process;
 
-    y_val <= cnt_val_q or (ghash_aad_val_i and aad_val) or (ghash_ct_val_i and ct_val);
+    y_val <= cnt_val_q or aad_val or ct_val;
 
     --------------------------------------------------------------------------------
     --! aad lenght
@@ -187,15 +186,13 @@ begin
             aad_cnt_q <= (others => '0');
         elsif(rising_edge(clk_i)) then
             if(aad_cnt_en = '1') then
-                aad_cnt_q <= aad_cnt;
+                aad_cnt_q <= bval_cnt;
             end if;
         end if;
     end process;
 
-    aad_cnt_en <= (j0_val_q or aad_val);
-
-    aad_cnt    <= (others => '0') when (j0_val_q = '1') else std_logic_vector(unsigned(aad_cnt_q) +
-                                                                to_unsigned(aad_len, aad_cnt_q'length));
+    aad_val    <= ghash_aad_val_i and bval_val;
+    aad_cnt_en <= j0_val_q or aad_val;
 
     --------------------------------------------------------------------------------
     --! cipher text lenght
@@ -206,51 +203,46 @@ begin
             ct_cnt_q <= (others => '0');
         elsif(rising_edge(clk_i)) then
             if(ct_cnt_en = '1') then
-                ct_cnt_q <= ct_cnt;
+                ct_cnt_q <= bval_cnt;
             end if;
         end if;
     end process;
 
-    ct_cnt_en <= (j0_val_q or ct_val);
-
-    ct_cnt    <= (others => '0') when (j0_val_q = '1') else std_logic_vector(unsigned(ct_cnt_q) +
-                                                                to_unsigned(ct_len, ct_cnt_q'length));
+    ct_val    <= ghash_ct_val_i and bval_val;
+    ct_cnt_en <= j0_val_q or ct_val;
 
     --------------------------------------------------------------------------------
-    --! Calculate the length of the aad data
+    --! Calculate the length of the cipher and aad data
     --------------------------------------------------------------------------------
-    aad_len_p : process(ghash_aad_bval_i)
-        variable tmp_v : std_logic_vector(NB_STAGE_C-1 downto 0);
+    bval_len_p : process(bval_sel)
     begin
-        tmp_v   := (others => '1');
-        aad_len <= 0;
-        aad_val <= '0';
-        for i in 0 to NB_STAGE_C-1 loop
-            if(tmp_v = ghash_aad_bval_i) then
-                aad_len <= NB_STAGE_C - i;
-                aad_val <= '1';
-            end if;
-            tmp_v(i) := '0';
-        end loop;
+        case (bval_sel) is
+            when x"8000" => bval_len <=  1;     bval_val <= '1';
+            when x"C000" => bval_len <=  2;     bval_val <= '1';
+            when x"E000" => bval_len <=  3;     bval_val <= '1';
+            when x"F000" => bval_len <=  4;     bval_val <= '1';
+            when x"F800" => bval_len <=  5;     bval_val <= '1';
+            when x"FC00" => bval_len <=  6;     bval_val <= '1';
+            when x"FE00" => bval_len <=  7;     bval_val <= '1';
+            when x"FF00" => bval_len <=  8;     bval_val <= '1';
+            when x"FF80" => bval_len <=  9;     bval_val <= '1';
+            when x"FFC0" => bval_len <= 10;     bval_val <= '1';
+            when x"FFE0" => bval_len <= 11;     bval_val <= '1';
+            when x"FFF0" => bval_len <= 12;     bval_val <= '1';
+            when x"FFF8" => bval_len <= 13;     bval_val <= '1';
+            when x"FFFC" => bval_len <= 14;     bval_val <= '1';
+            when x"FFFE" => bval_len <= 15;     bval_val <= '1';
+            when x"FFFF" => bval_len <= 16;     bval_val <= '1';
+            when others  => bval_len <=  0;     bval_val <= '0';
+        end case;
     end process;
 
-    --------------------------------------------------------------------------------
-    --! Calculate the length of the cipher data
-    --------------------------------------------------------------------------------
-    ct_len_p : process(ghash_ct_bval_i)
-        variable tmp_v : std_logic_vector(NB_STAGE_C-1 downto 0);
-    begin
-        tmp_v      := (others => '1');
-        ct_len <= 0;
-        ct_val <= '0';
-        for i in 0 to NB_STAGE_C-1 loop
-            if(tmp_v = ghash_ct_bval_i) then
-                ct_len <= NB_STAGE_C - i;
-                ct_val <= '1';
-            end if;
-            tmp_v(i) := '0';
-        end loop;
-    end process;
+    bval_sel <= ghash_aad_bval_i when (ghash_aad_val_i = '1') else ghash_ct_bval_i;
+
+    bval_cnt <= (others => '0') when (j0_val_q = '1') else
+                    std_logic_vector(unsigned(cnt_sel) + to_unsigned(bval_len, bval_cnt'length));
+
+    cnt_sel  <= aad_cnt_q when (aad_val = '1') else ct_cnt_q;
 
     --------------------------------------------------------------------------------
     --! Bit counter: minimum size increment is 1 byte
@@ -329,10 +321,7 @@ begin
             gf_mult_y_o => y_part_1);
 
     x_part_0 <= ZERO_C & gf_x(63 downto 0);
-    x_part_1 <= ZERO_C & gf_x(127 downto 64);
-
-    h_part_0 <= ZERO_C & h_q(63 downto 0);
-    h_part_1 <= ZERO_C & h_q(127 downto 64);
+    x_part_1 <= gf_x(127 downto 64) & ZERO_C;
 
     y_part   <= y_part_1 xor y_part_0;
 
