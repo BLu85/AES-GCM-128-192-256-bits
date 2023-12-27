@@ -17,14 +17,14 @@ RST_WINDOW = CLK_PERIOD + (CLK_PERIOD * 3 // 4)
 # ======================================================================================
 @cocotb.test()
 def test_dut(dut):
-    '''
-    The testbench:
-      * Binds the interfaces
-      * Loads the Key
-      * Loads the IV in the ICB
-      * Sends the AAD data through the pipeline
-      * Sends the PT data through the pipeline
-      * Checks the CT and the MAC match the model '''
+    #
+    # The testbench:
+    #   * Binds the interfaces
+    #   * Loads the Key
+    #   * Loads the IV in the ICB
+    #   * Sends the AAD data through the pipeline
+    #   * Sends the PT data through the pipeline
+    #   * Checks the CT and the MAC match the model
 
     # Create the lists of transactions
     aad_tran        = []

@@ -42,7 +42,7 @@ class aes_conf(object):
                             help='Configure the AES-GCM IP')
 
         self.parser.add_argument('-v', '--version', action='version',
-                            version='v1.4', help="Show the script version.")
+                            version='v1.5', help="Show the script version.")
 
         self.parser.add_argument('-m', '--mode',
                             default=None, metavar='MODE', type = lambda s : s.upper(), choices=self.ip_mode,
@@ -86,6 +86,14 @@ class aes_conf(object):
                             type=str, metavar='IV',
                             help='Load a specific IV')
 
+        self.parser.add_argument('-a', '--aad',
+                            type=str, metavar='AAD',
+                            help='Load a specific stream of AAD data. Load \'empty\' to not load AAD data')
+
+        self.parser.add_argument('-d', '--data',
+                            type=str, metavar='DATA',
+                            help='Load a specific stream of CT or PT data. Load \'empty\' to not load CT or PT data')
+
         self.parser.add_argument('-e', '--seed',
                             type=int, metavar='N',
                             help='Set the seed to re-run specific test conditions. N is an integer number')
@@ -106,7 +114,7 @@ class aes_conf(object):
                             default=None, metavar='SIZE', choices=self.test_size,
                             help='Set the maximum number of byte that can be generated for the AAD and the PT: short (2^10-1), medium (2^16-1), long (2^32-1)')
 
-        self.parser.add_argument('-d', '--verbose',
+        self.parser.add_argument('-z', '--verbose',
                             action='store_true',
                             help='increase output verbosity.')
 
@@ -145,13 +153,6 @@ class aes_conf(object):
             # Create the seed
             self.conf_param['seed'] = self.create_seed()
 
-        if self.args.tsize != None or self.args.seed == None:
-            if self.args.tsize != None:
-                self.conf_param['test_size'] = self.args.tsize
-            else:
-                self.conf_param['test_size'] = 'short'
-
-        self.conf_param['max_n_byte'] = test_size[self.conf_param['test_size']]
 
         if self.args.key != None or self.args.seed == None:
             if self.args.key != None:
@@ -165,20 +166,21 @@ class aes_conf(object):
                 self.conf_param['key'] = self.args.key
             else:
                 # Create a random Key
-                self.conf_param['key'] = ''.join(['{:X}'.format(random.randint(0, 16)) for _ in range(64)])
+                self.conf_param['key'] = 'random'
 
-        if self.args.iv != None or self.args.seed == None:
-            if self.args.iv != None:
-                self.conf_param['iv'] = self.args.iv
-            else:
-                # Create a random IV
-                self.conf_param['iv'] = ''.join(['{:X}'.format(random.randint(0, 16)) for _ in range(24)])
 
-        if self.args.compiler != None or self.args.seed == None:
-            if self.args.compiler != None:
-                self.conf_param['compiler'] = self.args.compiler
-            else:
-                self.conf_param['compiler'] = 'ghdl'
+        self.set_default_value(self.args.tsize, self.args.seed, 'test_size', 'short')
+
+        self.set_default_value(self.args.iv, self.args.seed, 'iv', 'random')
+
+        self.set_default_value(self.args.aad, self.args.seed, 'aad', 'random')
+
+        self.set_default_value(self.args.data, self.args.seed, 'data', 'random')
+
+        self.set_default_value(self.args.compiler, self.args.seed, 'compiler', 'ghdl')
+
+        self.conf_param['max_n_byte'] = test_size[self.conf_param['test_size']]
+
 
         if self.args.verbose == True:
             self.conf_param['verbose'] = 'DEBUG'
@@ -187,6 +189,11 @@ class aes_conf(object):
 
         if self.args.seed != None:
             self.conf_param['seed'] = self.args.seed
+
+        # Make all user supplied data uppercase
+        for key in ['key', 'iv', 'aad', 'data']:
+            if self.conf_param[key] not in ['random', 'empty']:
+                self.conf_param[key] = self.conf_param[key].upper()
 
         return self.conf_param
 

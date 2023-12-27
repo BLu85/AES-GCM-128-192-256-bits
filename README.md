@@ -238,7 +238,25 @@ To re-run a specific test, the ```--seed``` parameter can be used:
 ```
 python gcm_testbench.py -e 912237129 -s L
 ```
+
 The parameters can be overridden when explicited (_-s L_ in the command above).
+
+It is also possible to load a specific _key_, _iv_, _aad_ and _data_ stream. For example the test could be configured in a particular mode with a particular _key_:
+```
+python gcm_testbench.py -m 256 -k 92E11DCDAA866F5CE790FD24501F92509AACF4CB8B1339D50C9C1240935DD08B
+```
+
+or it can be tested with the [NIST test vectors](https://www.ieee802.org/1/files/public/docs2011/bn-randall-test-vectors-0511-v1.pdf) to check it returns the expected data:
+```
+python gcm_testbench.py -m 128 -k AD7A2BD03EAC835A6F620FDCB506B345 -d 08000F101112131415161718191A1B1C1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A0002 -a D609B1F056637A0D46DF998D88E52E00B2C2846512153524C0895E81 -i 12153524C0895E81B2C28465
+```
+
+or
+
+```
+python gcm_testbench.py -m256 -k 691D3EE909D7F54167FD1CA0B5D769081F2BDE1AEE655FDBAB80BD5295AE6BE7 -d empty -a E20106D7CD0DF0761E8DCD3D88E5400076D457ED08000F101112131415161718191A1B1C1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A0003 -i F0761E8DCD3D000176D457ED
+```
+
 The test seed is the name of the file with extension _.json_ located at the directory ```tb/tmp/```.
 To show the other parameters, run the script with ```--help``` option.
 At the end of the test the **cocotb** table reports the test result.

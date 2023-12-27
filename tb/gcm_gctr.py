@@ -11,7 +11,10 @@ from progress.bar      import ShadyBar as Bar
 
 
 AES_KEY_256_WIDTH   = 256
-AES_KEY_TYPES       = ['128', '192', '256']
+AES_128             = '128'
+AES_192             = '192'
+AES_256             = '256'
+AES_KEY_TYPES       = [AES_128, AES_192, AES_256]
 
 
 # ======================================================================================
@@ -143,9 +146,9 @@ class gcm_gctr(object):
         128 or 192 '''
 
         # Select key length
-        if self.config['aes_mode'] == "128":
+        if self.config['aes_mode'] == AES_128:
             aes_key_mode = 0b0100
-        elif self.config['aes_mode'] == "192":
+        elif self.config['aes_mode'] == AES_192:
             aes_key_mode = 0b0110
         else: # "256"
             aes_key_mode = 0b0111
@@ -180,9 +183,9 @@ class gcm_gctr(object):
         loaded '''
 
         # Select key length
-        if self.config['aes_mode'] == "128":
+        if self.config['aes_mode'] == AES_128:
             exp_rnd = 11
-        elif self.config['aes_mode'] == "192":
+        elif self.config['aes_mode'] == AES_192:
             exp_rnd = 13
         else: # "256"
             exp_rnd = 15
@@ -227,17 +230,16 @@ class gcm_gctr(object):
         iv  = {}
         key = {}
 
-        _bytes = {  'aad_n_bytes' : 0,
-                    'pt_n_bytes' : 0}
+        _bytes = {}
         _name  = [  'aad_n_bytes',
                     'pt_n_bytes']
 
         if self.config['aes_mode'] == "ALL":
             self.config['aes_mode'] = random.choice(AES_KEY_TYPES)
 
-        if self.config['aes_mode'] == '128':
+        if self.config['aes_mode'] == AES_128:
             key['n_bytes'] = 16
-        elif self.config['aes_mode'] == '192':
+        elif self.config['aes_mode'] == AES_192:
             key['n_bytes'] = 24
         else:
             key['n_bytes'] = 32
@@ -245,13 +247,23 @@ class gcm_gctr(object):
         # Load the IV
         iv['n_bytes'] = 12
 
-        if re.fullmatch(r"^[0-9a-fA-F]+$", self.config['iv']) is not None:
+        # Generate a random IV if not provided from the user
+        if self.config['iv'] == 'random':
+            self.config['iv'] = ''.join(['{:X}'.format(random.randint(0, 16)) for _ in range(24)])
+
+        # Load the IV
+        if re.fullmatch(r"^[0-9A-F]+$", self.config['iv']) is not None:
+            # Right align, pad width 0s, {width}.{precision (max)}
             iv['data'] = '{:0>{width}.{max}}'.format(self.config['iv'], width=2*iv['n_bytes'], max=2*iv['n_bytes'])
         else:
             raise TestFailure("IV is not an hexadecimal number")
 
+        # Generate a random Key if not provided from the user
+        if self.config['key'] == 'random':
+            self.config['key'] = ''.join(['{:X}'.format(random.randint(0, 16)) for _ in range(64)])
+
         # Load the Key
-        if re.fullmatch(r"^[0-9a-fA-F]+$", self.config['key']) is not None:
+        if re.fullmatch(r"^[0-9A-F]+$", self.config['key']) is not None:
             # Right align, pad width 0s, {width}.{precision (max)}
             key['data'] = '{:0>{width}.{max}}'.format(self.config['key'], width=2*key['n_bytes'], max=2*key['n_bytes'])
         else:
@@ -260,11 +272,45 @@ class gcm_gctr(object):
         self.data['iv']  = iv
         self.data['key'] = key
 
-        # Number of byte for AAD and PT
+        # Generate random number of bytes for AAD and PT
         for i in range(2):
             n_bytes = int(random.betavariate(.1, .1) * self.config['max_n_byte'])
-            self.dut._log.info(f"{_name[i]}: byte to generate: {n_bytes}")
             _bytes[_name[i]] = n_bytes
+
+
+        # Override the AAD with the user data if provided
+        if self.config['aad'] == 'empty':
+            _bytes['aad_n_bytes'] = 0
+        elif self.config['aad'] != 'random':
+            if re.fullmatch(r"^[0-9A-F]+$", self.config['aad']) is not None:
+                aad_len = len(self.config['aad'])
+                # AAD data are supplied in nibbles. We need to produce the number of bytes (2 nibbles)
+                if aad_len & 0x1:
+                    aad_len = aad_len + 1
+                # AAD data in number of bytes
+                aad_len = aad_len >> 1
+                _bytes['aad_n_bytes'] = aad_len
+            else:
+                raise TestFailure("AAD data is not an hexadecimal number")
+
+
+        # Override the Data with the user data if provided
+        if self.config['data'] == 'empty':
+            _bytes['pt_n_bytes'] = 0
+        elif self.config['data'] != 'random':
+            if re.fullmatch(r"^[0-9A-F]+$", self.config['data']) is not None:
+                data_len = len(self.config['data'])
+                # Data data are supplied in nibbles. We need to produce the number of bytes (2 nibbles)
+                if data_len & 0x1:
+                    data_len = data_len + 1
+                # Data data in number of bytes
+                data_len = data_len >> 1
+                _bytes['pt_n_bytes'] = data_len
+            else:
+                raise TestFailure("Data is not an hexadecimal number")
+
+        for i in range(2):
+            self.dut._log.info(f"{_name[i]}: byte to generate: {_bytes[_name[i]]}")
 
         self.data.update(_bytes)
 
@@ -303,47 +349,84 @@ class gcm_gctr(object):
         if aad_tot_trans:
             bar_txt = 'AAD: generating ' + str(aad_tot_trans) + ' block'
             bar_txt = (bar_txt + 's') if aad_tot_trans != 1 else bar_txt
-            with Bar(bar_txt, max=aad_tot_trans) as bar:
-                while aad_n_trans:
-                    if len(aad_tran) < 100:
-                        transaction = bytes.fromhex('{:032X}'.format(random.randint(0, (2**128)-1)))
+            if self.config['aad'] == 'random':
+                with Bar(bar_txt, max=aad_tot_trans) as bar:
+                    while aad_n_trans:
+                        if len(aad_tran) < 100:
+                            transaction = bytes.fromhex('{:032X}'.format(random.randint(0, (2**128)-1)))
+                            aad_tran.append(transaction)
+                            aad_model_tran.append(transaction)
+                            aad_n_trans -= 1
+                            bar.next()
+                        else:
+                            yield RisingEdge(self.dut.clk_i)
+
+                    # Create the last chunck of AAD shorter than a word
+                    if aad_last_trans:
+                        n_rem_bytes = aad_n_bytes & 0xF
+                        transaction = bytes.fromhex('{:0{width}X}'.format(random.randint(0, (2**(8*n_rem_bytes))-1), width=2*n_rem_bytes))
                         aad_tran.append(transaction)
                         aad_model_tran.append(transaction)
-                        aad_n_trans -= 1
                         bar.next()
-                    else:
+            else:
+                self.dut._log.info(f"Load User AAD: 0x{self.config['aad']}\n")
+                aad_data = []
+                with Bar(bar_txt, max=aad_tot_trans) as bar:
+                    step = 32
+                    for i in range(0, len(self.config['aad']), step):
+                        chunck = self.config['aad'][i : i + step]
+                        if len(chunck) & 0x1:
+                            chunck = chunck + '0'
+                        aad_data.append(chunck)
+
+                    for item in aad_data:
+                        transaction = bytes.fromhex(item)
+                        aad_tran.append(transaction)
+                        aad_model_tran.append(transaction)
+                        bar.next()
                         yield RisingEdge(self.dut.clk_i)
 
-                # Create the last chunck of AAD shorter than a word
-                if aad_last_trans:
-                    n_rem_bytes = aad_n_bytes & 0xF
-                    transaction = bytes.fromhex('{:0{width}X}'.format(random.randint(0, (2**(8*n_rem_bytes))-1), width=2*n_rem_bytes))
-                    aad_tran.append(transaction)
-                    aad_model_tran.append(transaction)
-                    bar.next()
                 bar.finish()
 
         # Load the PT data
         if pt_tot_trans:
             bar_txt = 'PT:  generating ' + str(pt_tot_trans) + ' block'
             bar_txt = (bar_txt + 's') if pt_tot_trans != 1 else bar_txt
-            with Bar(bar_txt, max=pt_tot_trans) as bar:
-                while pt_n_trans:
-                    if len(pt_tran) < 100:
-                        transaction = bytes.fromhex('{:032X}'.format(random.randint(0, (2**128)-1)))
+            if self.config['data'] == 'random':
+                with Bar(bar_txt, max=pt_tot_trans) as bar:
+                    while pt_n_trans:
+                        if len(pt_tran) < 100:
+                            transaction = bytes.fromhex('{:032X}'.format(random.randint(0, (2**128)-1)))
+                            pt_tran.append(transaction)
+                            pt_model_tran.append(transaction)
+                            pt_n_trans -= 1
+                            bar.next()
+                        else:
+                            yield RisingEdge(self.dut.clk_i)
+
+                    # Create the last chunck of PT shorter than a word
+                    if pt_last_trans:
+                        n_rem_bytes = pt_n_bytes & 0xF
+                        transaction = bytes.fromhex('{:0{width}X}'.format(random.randint(0, (2**(8*n_rem_bytes))-1), width=2*n_rem_bytes))
                         pt_tran.append(transaction)
                         pt_model_tran.append(transaction)
-                        pt_n_trans -= 1
                         bar.next()
-                    else:
+            else:
+                self.dut._log.info(f"Load User Data: 0x{self.config['data']}\n")
+                pt_data = []
+                with Bar(bar_txt, max=pt_tot_trans) as bar:
+                    step = 32
+                    for i in range(0, len(self.config['data']), step):
+                        chunck = self.config['data'][i : i + step]
+                        if len(chunck) & 0x1:
+                            chunck = chunck + '0'
+                        pt_data.append(chunck)
+
+                    for item in pt_data:
+                        transaction = bytes.fromhex(item)
+                        pt_tran.append(transaction)
+                        pt_model_tran.append(transaction)
+                        bar.next()
                         yield RisingEdge(self.dut.clk_i)
 
-                # Create the last chunck of PT shorter than a word
-                if pt_last_trans:
-                    n_rem_bytes = pt_n_bytes & 0xF
-                    transaction = bytes.fromhex('{:0{width}X}'.format(random.randint(0, (2**(8*n_rem_bytes))-1), width=2*n_rem_bytes))
-                    pt_tran.append(transaction)
-                    pt_model_tran.append(transaction)
-                    bar.next()
                 bar.finish()
-
