@@ -13,6 +13,8 @@ use work.gcm_pkg.all;
 
 --------------------------------------------------------------------------------
 entity gcm_ghash is
+    generic(
+        aes_gcm_split_gfmul         : natural range 0 to 1 := 0);
     port(
         rst_i                       : in  std_logic;
         clk_i                       : in  std_logic;
@@ -46,6 +48,7 @@ architecture arch_gcm_ghash of gcm_ghash is
     signal J0_q                 : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
     signal gf_x                 : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
     signal gf_y                 : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
+    signal gf_y_whole           : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
     signal y_q                  : std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
     signal y_val                : std_logic;
     signal pkt_val_q            : std_logic;
@@ -307,31 +310,37 @@ begin
     end process;
 
     --------------------------------------------------------------------------------
-    --! Component instantiation
+    --! Component instantiation. Generate a single or double gfmul.
+    --!   The double gfmul instantiation has better timings but bigger area
     --------------------------------------------------------------------------------
-    u_ghash_gfmul: ghash_gfmul
-        port map(
-            gf_mult_h_i => h_q,
-            gf_mult_x_i => gf_x,
-            gf_mult_y_o => gf_y);
+    gen_multi_gfmul: if aes_gcm_split_gfmul > 0 generate
+        u_ghash_gfmul_0: ghash_gfmul
+            port map(
+                gf_mult_h_i => h_q,
+                gf_mult_x_i => x_part_0,
+                gf_mult_y_o => y_part_0);
 
-    u_ghash_gfmul_0: ghash_gfmul
-        port map(
-            gf_mult_h_i => h_q,
-            gf_mult_x_i => x_part_0,
-            gf_mult_y_o => y_part_0);
+        u_ghash_gfmul_1: ghash_gfmul
+            port map(
+                gf_mult_h_i => h_q,
+                gf_mult_x_i => x_part_1,
+                gf_mult_y_o => y_part_1);
+
+        x_part_0 <= ZERO_C & gf_x(63 downto 0);
+        x_part_1 <= gf_x(127 downto 64) & ZERO_C;
+        y_part   <= y_part_1 xor y_part_0;
+    end generate gen_multi_gfmul;
+
+    gen_single_gfmul: if aes_gcm_split_gfmul = 0 generate
+        u_ghash_gfmul: ghash_gfmul
+            port map(
+                gf_mult_h_i => h_q,
+                gf_mult_x_i => gf_x,
+                gf_mult_y_o => gf_y_whole);
+    end generate gen_single_gfmul;
 
 
-    u_ghash_gfmul_1: ghash_gfmul
-        port map(
-            gf_mult_h_i => h_q,
-            gf_mult_x_i => x_part_1,
-            gf_mult_y_o => y_part_1);
-
-    x_part_0 <= ZERO_C & gf_x(63 downto 0);
-    x_part_1 <= gf_x(127 downto 64) & ZERO_C;
-
-    y_part   <= y_part_1 xor y_part_0;
+    gf_y <= gf_y_whole when (aes_gcm_split_gfmul = 0) else y_part;
 
     --------------------------------------------------------------------------------
     ghash_h_loaded_o    <= h_loaded_q;

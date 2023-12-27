@@ -42,7 +42,7 @@ class aes_conf(object):
                             help='Configure the AES-GCM IP')
 
         self.parser.add_argument('-v', '--version', action='version',
-                            version='v1.5', help="Show the script version.")
+                            version='v1.6', help="Show the script version.")
 
         self.parser.add_argument('-m', '--mode',
                             default=None, metavar='MODE', type = lambda s : s.upper(), choices=self.ip_mode,
@@ -88,11 +88,15 @@ class aes_conf(object):
 
         self.parser.add_argument('-a', '--aad',
                             type=str, metavar='AAD',
-                            help='Load a specific stream of AAD data. Load \'empty\' to not load AAD data')
+                            help='Load a specific stream of AAD data; \'empty\' loads 0 AAD bytes')
 
         self.parser.add_argument('-d', '--data',
                             type=str, metavar='DATA',
-                            help='Load a specific stream of CT or PT data. Load \'empty\' to not load CT or PT data')
+                            help='Load a specific stream of CT or PT data; \'empty\' loads 0 CT or PT bytes')
+
+        self.parser.add_argument('-f', '--ngfmul',
+                            type=int, default=1, metavar='GFMUL', choices=range(1,3),
+                            help='Specify 1 (default) or 2 GFMUL IP in the GHASH block.')
 
         self.parser.add_argument('-e', '--seed',
                             type=int, metavar='N',
@@ -216,6 +220,10 @@ class aes_conf(object):
 
         self.set_default_value(self.args.ed, seed, 'enc_dec', 'enc')
 
+        self.set_default_value(self.args.pipe, seed, 'pipes_in_core', 0)
+
+        self.set_default_value(self.args.ngfmul, seed, 'n_gfmul_ip', 1)
+
 
         if self.conf_param['aes_size'] == 'XS':
             self.conf_param['n_rounds'] = 1
@@ -230,8 +238,6 @@ class aes_conf(object):
                 self.conf_param['n_rounds'] = aes_n_rounds['256']
             else:
                 self.conf_param['n_rounds'] = aes_n_rounds[self.conf_param['aes_mode']]
-
-        self.set_default_value(self.args.pipe, seed, 'pipes_in_core', 0)
 
         if self.args.rmexp != None or seed == None:
                 self.conf_param['key_pre_exp'] = self.args.rmexp
@@ -299,6 +305,7 @@ class aes_conf(object):
         generate_aes_top( self.conf_param['aes_mode'],
                           self.conf_param['n_rounds'],
                           self.conf_param['pipes_in_core'],
+                          self.conf_param['n_gfmul_ip']-1,
                           gen_rtl_path)
 
     # ======================================================================================
