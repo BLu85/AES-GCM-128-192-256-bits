@@ -67,8 +67,14 @@ class aes_conf(object):
                             default=False, action='store_true',
                             help='Remove the logic that expands the key. Expanded key has to be provided externally')
 
+        self.parser.add_argument('-f', '--ngfmul',
+                            type=int, default=1, metavar='GFMUL', choices=range(1,3),
+                            help='Specify 1 (default) or 2 GFMUL IP in the GHASH block.')
+
+
         if self.config_ip_only == True:
             return
+
 
         self.parser.add_argument('-w', '--wipe',
                             action='store_true',
@@ -93,10 +99,6 @@ class aes_conf(object):
         self.parser.add_argument('-d', '--data',
                             type=str, metavar='DATA',
                             help='Load a specific stream of CT or PT data; \'empty\' loads 0 CT or PT bytes')
-
-        self.parser.add_argument('-f', '--ngfmul',
-                            type=int, default=1, metavar='GFMUL', choices=range(1,3),
-                            help='Specify 1 (default) or 2 GFMUL IP in the GHASH block.')
 
         self.parser.add_argument('-e', '--seed',
                             type=int, metavar='N',
