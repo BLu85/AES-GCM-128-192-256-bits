@@ -16,4 +16,4 @@ if __name__ == "__main__":
     # Write the parameter in the gcm top file
     print(' >>\tOK   : AES-GCM IP configured as:')
     for key, value in conf.conf_param.items():
-        print(' >>\tOK   : ' + key + ':\t' + str(value))
+        print((' >>\tOK   : ' + key).ljust(26) + ': ' + str(value))
