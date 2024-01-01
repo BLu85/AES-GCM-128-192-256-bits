@@ -24,10 +24,10 @@ The configuration parameters can be combined in order to obtain an IP that suits
 ## Requirements
 
 ### To produce the source files
-* Python3.6+
+* Python3.2+
 
 ### To run the testbench
-* Python3.5+
+* Python3.6+
 * GHDL
 * Cocotb (`pip install cocotb`)
 * Cocotb-bus (`pip install cocotb-bus`)
