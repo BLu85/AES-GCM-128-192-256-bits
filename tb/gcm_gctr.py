@@ -345,10 +345,12 @@ class gcm_gctr(object):
         pt_last_trans   = 1 if pt_n_bytes & 0xF else 0
         pt_tot_trans    = pt_n_trans + pt_last_trans
 
+        str_align       = 18 + max(len(str(aad_tot_trans)), len(str(pt_tot_trans)))
+
         # Load the AAD data
         if aad_tot_trans:
-            bar_txt = 'AAD: generating ' + str(aad_tot_trans) + ' block'
-            bar_txt = (bar_txt + 's') if aad_tot_trans != 1 else bar_txt
+            bar_txt = ('AAD: generating ' + str(aad_tot_trans)).ljust(str_align) + ' block'
+            bar_txt = (bar_txt + 's') if aad_tot_trans != 1 else (bar_txt + ' ')
             if self.config['aad'] == 'random':
                 with Bar(bar_txt, max=aad_tot_trans) as bar:
                     while aad_n_trans:
@@ -390,8 +392,8 @@ class gcm_gctr(object):
 
         # Load the PT data
         if pt_tot_trans:
-            bar_txt = 'PT:  generating ' + str(pt_tot_trans) + ' block'
-            bar_txt = (bar_txt + 's') if pt_tot_trans != 1 else bar_txt
+            bar_txt = ('PT:  generating ' + str(pt_tot_trans)).ljust(str_align) + ' block'
+            bar_txt = (bar_txt + 's') if pt_tot_trans != 1 else (bar_txt + ' ')
             if self.config['data'] == 'random':
                 with Bar(bar_txt, max=pt_tot_trans) as bar:
                     while pt_n_trans:

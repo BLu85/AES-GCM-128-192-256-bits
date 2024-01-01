@@ -24,7 +24,7 @@ The configuration parameters can be combined in order to obtain an IP that suits
 ## Requirements
 
 ### To produce the source files
-* Python3.5+
+* Python3.6+
 
 ### To run the testbench
 * Python3.5+

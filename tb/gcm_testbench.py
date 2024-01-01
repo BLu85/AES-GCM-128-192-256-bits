@@ -15,40 +15,40 @@ if __name__ == "__main__":
 
     if conf.args.wipe == True:
         conf.wipe_dir(gen_base_path + 'tmp/')
+    else:
+        mode  = conf.args.mode
+        pipe  = conf.args.pipe
+        size  = conf.args.size
+        tsize = conf.args.tsize
+        ip_ed = conf.args.ed
 
-    mode  = conf.args.mode
-    pipe  = conf.args.pipe
-    size  = conf.args.size
-    tsize = conf.args.tsize
-    ip_ed = conf.args.ed
+        for i in range(conf.args.n_test):
 
-    for i in range(conf.args.n_test):
+            # Randomise the IP paramters
+            if conf.args.rand_param is True:
+                conf.args.last_test = False
+                if mode == None:
+                    conf.args.mode  = random.choice(conf.ip_mode)
+                if ip_ed == None:
+                    conf.args.ed    = random.choice(conf.ip_ed)
+                if pipe == None:
+                    conf.args.pipe  = random.choice(conf.ip_pipe)
+                if size == None:
+                    conf.args.size  = random.choice(conf.ip_size)
+                if tsize == None:
+                    conf.args.tsize = random.choice(conf.test_size)
 
-        # Randomise the IP paramters
-        if conf.args.rand_param is True:
-            conf.args.last_test = False
-            if mode == None:
-                conf.args.mode  = random.choice(conf.ip_mode)
-            if ip_ed == None:
-                conf.args.ed    = random.choice(conf.ip_ed)
-            if pipe == None:
-                conf.args.pipe  = random.choice(conf.ip_pipe)
-            if size == None:
-                conf.args.size  = random.choice(conf.ip_size)
-            if tsize == None:
-                conf.args.tsize = random.choice(conf.test_size)
+            # Configure the test
+            conf.test_config()
 
-        # Configure the test
-        conf.test_config()
+            # Configure the IP
+            conf.gcm_ip_config()
 
-        # Configure the IP
-        conf.gcm_ip_config()
+            # Generate the files from the python templates
+            conf.generate_templated_file()
 
-        # Generate the files from the python templates
-        conf.generate_templated_file()
+            # Save the configuration parameters in the file _seed_.json
+            conf.save_configuration()
 
-        # Save the configuration parameters in the file _seed_.json
-        conf.save_configuration()
-
-        # Generate the parameters for the cocotb makefile and run the test
-        a = os.system('make ' + conf.cocotb_params())
+            # Generate the parameters for the cocotb makefile and run the test
+            a = os.system('make ' + conf.cocotb_params())

@@ -42,14 +42,14 @@ class aes_conf(object):
                             help='Configure the AES-GCM IP')
 
         self.parser.add_argument('-v', '--version', action='version',
-                            version='v1.6', help="Show the script version.")
+                            version='v1.7', help="Show the script version.")
 
         self.parser.add_argument('-m', '--mode',
                             default=None, metavar='MODE', type = lambda s : s.upper(), choices=self.ip_mode,
                             help='Set the GCM mode: choose amongst 128 (default), 192, or 256.')
 
         self.parser.add_argument('-b', '--ed',
-                            type=str, default=None, metavar='ENC DEC', choices=self.ip_ed,
+                            type=str.lower, default=None, metavar='ENC DEC', choices=self.ip_ed,
                             help='Set the IP to encrypt (default) or decrypt incoming data.')
 
         self.parser.add_argument('-p', '--pipe',
@@ -57,7 +57,7 @@ class aes_conf(object):
                             help='Set the number of pipe stages in the AES round core. E.g.: set -p 7 to get 3 pipe stages (maximum value).')
 
         self.parser.add_argument('-s', '--size',
-                            default=None, metavar='SIZE', choices=self.ip_size,
+                            type=str.upper, default=None, metavar='SIZE', choices=self.ip_size,
                             help='Set the size of the GCM-AES IP. It defines the number of AES rounds:\
                             \nXS = 1 AES round instance,\nS = 2 AES round instances,\
                             \nM = AES round instances are half the number of rounds needed for the specific mode,\
@@ -81,23 +81,23 @@ class aes_conf(object):
                             help='Wipe the tmp folder from all the config files.')
 
         self.parser.add_argument('-c', '--compiler',
-                            type=str,
+                            type=str.lower,
                             help='Define the compiler')
 
         self.parser.add_argument('-k', '--key',
-                            type=str, metavar='KEY',
+                            type=str.upper, metavar='KEY',
                             help='Load a specific key')
 
         self.parser.add_argument('-i', '--iv',
-                            type=str, metavar='IV',
+                            type=str.upper, metavar='IV',
                             help='Load a specific IV')
 
         self.parser.add_argument('-a', '--aad',
-                            type=str, metavar='AAD',
+                            type=str.upper, metavar='AAD',
                             help='Load a specific stream of AAD data; \'empty\' loads 0 AAD bytes')
 
         self.parser.add_argument('-d', '--data',
-                            type=str, metavar='DATA',
+                            type=str.upper, metavar='DATA',
                             help='Load a specific stream of CT or PT data; \'empty\' loads 0 CT or PT bytes')
 
         self.parser.add_argument('-e', '--seed',
@@ -139,9 +139,7 @@ class aes_conf(object):
     # ======================================================================================
     def test_config(self):
 
-        test_size = {   'short'  : 2**12 - 1,
-                        'medium' : 2**16 - 1,
-                        'long'   : 2**32 - 1}
+        test_size = dict(zip(self.test_size, [2**12 - 1, 2**16 - 1, 2**32 - 1]))
 
         basepath = self.basepath + 'tmp/'
 
@@ -175,15 +173,11 @@ class aes_conf(object):
                 self.conf_param['key'] = 'random'
 
 
-        self.set_default_value(self.args.tsize, self.args.seed, 'test_size', 'short')
-
-        self.set_default_value(self.args.iv, self.args.seed, 'iv', 'random')
-
-        self.set_default_value(self.args.aad, self.args.seed, 'aad', 'random')
-
-        self.set_default_value(self.args.data, self.args.seed, 'data', 'random')
-
-        self.set_default_value(self.args.compiler, self.args.seed, 'compiler', 'ghdl')
+        self.set_default_value( self.args.tsize    , self.args.seed , 'test_size' , 'short'  )
+        self.set_default_value( self.args.iv       , self.args.seed , 'iv'        , 'random' )
+        self.set_default_value( self.args.aad      , self.args.seed , 'aad'       , 'random' )
+        self.set_default_value( self.args.data     , self.args.seed , 'data'      , 'random' )
+        self.set_default_value( self.args.compiler , self.args.seed , 'compiler'  , 'ghdl'   )
 
         self.conf_param['max_n_byte'] = test_size[self.conf_param['test_size']]
 
@@ -196,35 +190,24 @@ class aes_conf(object):
         if self.args.seed != None:
             self.conf_param['seed'] = self.args.seed
 
-        # Make all user supplied data uppercase
-        for key in ['key', 'iv', 'aad', 'data']:
-            if self.conf_param[key] not in ['random', 'empty']:
-                self.conf_param[key] = self.conf_param[key].upper()
-
         return self.conf_param
 
 
     # ======================================================================================
     def gcm_ip_config(self):
 
-        aes_n_rounds = {    '128' : 10,
-                            '192' : 12,
-                            '256' : 14}
+        aes_n_rounds = dict(zip(self.ip_mode, [10, 12, 14]))
 
         if hasattr(self.args, 'seed'):
             seed = self.args.seed
         else:
             seed = None
 
-        self.set_default_value(self.args.size, seed, 'aes_size', 'XS')
-
-        self.set_default_value(self.args.mode, seed, 'aes_mode', '128')
-
-        self.set_default_value(self.args.ed, seed, 'enc_dec', 'enc')
-
-        self.set_default_value(self.args.pipe, seed, 'pipes_in_core', 0)
-
-        self.set_default_value(self.args.ngfmul, seed, 'n_gfmul_ip', 1)
+        self.set_default_value( self.args.size   , seed , 'aes_size'      , 'XS'  )
+        self.set_default_value( self.args.mode   , seed , 'aes_mode'      , '128' )
+        self.set_default_value( self.args.ed     , seed , 'enc_dec'       , 'enc' )
+        self.set_default_value( self.args.pipe   , seed , 'pipes_in_core' , 0     )
+        self.set_default_value( self.args.ngfmul , seed , 'n_gfmul_ip'    , 1     )
 
 
         if self.conf_param['aes_size'] == 'XS':
