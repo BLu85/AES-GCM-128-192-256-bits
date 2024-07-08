@@ -44,7 +44,7 @@ class aes_conf(object):
                             help='Configure the AES-GCM IP')
 
         self.parser.add_argument('-v', '--version', action='version',
-                            version='v1.7', help="Show the script version.")
+                            version='v1.8', help="Show the script version.")
 
         self.parser.add_argument('-m', '--mode',
                             default=None, metavar='MODE', type = lambda s : s.upper(), choices=self.ip_mode,

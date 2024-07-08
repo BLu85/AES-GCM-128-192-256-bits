@@ -193,6 +193,10 @@ begin
                     w_6_q <= w_1;
                     w_5_q <= w_2;
                     w_4_q <= w_3;
+                    w_3_q <= RST_WORD_C;
+                    w_2_q <= RST_WORD_C;
+                    w_1_q <= RST_WORD_C;
+                    w_0_q <= RST_WORD_C;
                 elsif(aes_mode_i = AES_MODE_192_C) then
                     w_7_q <= w_in_3;
                     w_6_q <= w_in_2;
@@ -200,6 +204,8 @@ begin
                     w_4_q <= w_1;
                     w_3_q <= w_2;
                     w_2_q <= w_3;
+                    w_1_q <= RST_WORD_C;
+                    w_0_q <= RST_WORD_C;
                 else
                     w_7_q <= w_in_3;
                     w_6_q <= w_in_2;
