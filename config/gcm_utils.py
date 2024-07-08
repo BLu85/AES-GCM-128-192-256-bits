@@ -11,6 +11,8 @@ from config_aes_kprexp import generate_aes_pre_exp_key
 from config_aes_top    import generate_aes_top
 from argparse          import RawTextHelpFormatter
 
+RANDOM_PARAM = 'RANDOM'
+
 
 # ======================================================================================
 class aes_conf(object):
@@ -170,14 +172,14 @@ class aes_conf(object):
                 self.conf_param['key'] = self.args.key
             else:
                 # Create a random Key
-                self.conf_param['key'] = 'random'
+                self.conf_param['key'] = RANDOM_PARAM
 
 
-        self.set_default_value( self.args.tsize    , self.args.seed , 'test_size' , 'short'  )
-        self.set_default_value( self.args.iv       , self.args.seed , 'iv'        , 'random' )
-        self.set_default_value( self.args.aad      , self.args.seed , 'aad'       , 'random' )
-        self.set_default_value( self.args.data     , self.args.seed , 'data'      , 'random' )
-        self.set_default_value( self.args.compiler , self.args.seed , 'compiler'  , 'ghdl'   )
+        self.set_default_value( self.args.tsize    , self.args.seed , 'test_size' , 'short'      )
+        self.set_default_value( self.args.iv       , self.args.seed , 'iv'        , RANDOM_PARAM )
+        self.set_default_value( self.args.aad      , self.args.seed , 'aad'       , RANDOM_PARAM )
+        self.set_default_value( self.args.data     , self.args.seed , 'data'      , RANDOM_PARAM )
+        self.set_default_value( self.args.compiler , self.args.seed , 'compiler'  , 'ghdl'       )
 
         self.conf_param['max_n_byte'] = test_size[self.conf_param['test_size']]
 

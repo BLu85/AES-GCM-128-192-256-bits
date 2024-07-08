@@ -16,6 +16,9 @@ AES_192             = '192'
 AES_256             = '256'
 AES_KEY_TYPES       = [AES_128, AES_192, AES_256]
 
+RANDOM_PARAM        = 'RANDOM'
+EMPTY_PARAM         = 'EMPTY'
+
 
 # ======================================================================================
 class gcm_gctr(object):
@@ -248,7 +251,7 @@ class gcm_gctr(object):
         iv['n_bytes'] = 12
 
         # Generate a random IV if not provided from the user
-        if self.config['iv'] == 'random':
+        if self.config['iv'] == RANDOM_PARAM:
             self.config['iv'] = ''.join(['{:X}'.format(random.randint(0, 16)) for _ in range(24)])
 
         # Load the IV
@@ -259,7 +262,7 @@ class gcm_gctr(object):
             raise TestFailure("IV is not an hexadecimal number")
 
         # Generate a random Key if not provided from the user
-        if self.config['key'] == 'random':
+        if self.config['key'] == RANDOM_PARAM:
             self.config['key'] = ''.join(['{:X}'.format(random.randint(0, 16)) for _ in range(64)])
 
         # Load the Key
@@ -279,9 +282,9 @@ class gcm_gctr(object):
 
 
         # Override the AAD with the user data if provided
-        if self.config['aad'] == 'empty':
+        if self.config['aad'] == EMPTY_PARAM:
             _bytes['aad_n_bytes'] = 0
-        elif self.config['aad'] != 'random':
+        elif self.config['aad'] != RANDOM_PARAM:
             if re.fullmatch(r"^[0-9A-F]+$", self.config['aad']) is not None:
                 aad_len = len(self.config['aad'])
                 # AAD data are supplied in nibbles. We need to produce the number of bytes (2 nibbles)
@@ -295,9 +298,9 @@ class gcm_gctr(object):
 
 
         # Override the Data with the user data if provided
-        if self.config['data'] == 'empty':
+        if self.config['data'] == EMPTY_PARAM:
             _bytes['pt_n_bytes'] = 0
-        elif self.config['data'] != 'random':
+        elif self.config['data'] != RANDOM_PARAM:
             if re.fullmatch(r"^[0-9A-F]+$", self.config['data']) is not None:
                 data_len = len(self.config['data'])
                 # Data data are supplied in nibbles. We need to produce the number of bytes (2 nibbles)
@@ -351,7 +354,7 @@ class gcm_gctr(object):
         if aad_tot_trans:
             bar_txt = ('AAD: generating ' + str(aad_tot_trans)).ljust(str_align) + ' block'
             bar_txt = (bar_txt + 's') if aad_tot_trans != 1 else (bar_txt + ' ')
-            if self.config['aad'] == 'random':
+            if self.config['aad'] == RANDOM_PARAM:
                 with Bar(bar_txt, max=aad_tot_trans) as bar:
                     while aad_n_trans:
                         if len(aad_tran) < 100:
@@ -394,7 +397,7 @@ class gcm_gctr(object):
         if pt_tot_trans:
             bar_txt = ('PT:  generating ' + str(pt_tot_trans)).ljust(str_align) + ' block'
             bar_txt = (bar_txt + 's') if pt_tot_trans != 1 else (bar_txt + ' ')
-            if self.config['data'] == 'random':
+            if self.config['data'] == RANDOM_PARAM:
                 with Bar(bar_txt, max=pt_tot_trans) as bar:
                     while pt_n_trans:
                         if len(pt_tran) < 100:
