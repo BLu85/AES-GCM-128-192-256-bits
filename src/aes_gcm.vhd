@@ -6,6 +6,7 @@
 --! @Source:        https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf
 --------------------------------------------------------------------------------
 library ieee;
+use ieee.std_logic_misc.or_reduce;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 use work.gcm_pkg.all;
@@ -62,6 +63,7 @@ architecture arch_aes_gcm of aes_gcm is
     signal ghash_j0_loaded        : std_logic;
     signal ghash_aad_val          : std_logic;
     signal ghash_ct_val           : std_logic;
+    signal ghash_new_key          : std_logic;
 
     --------------------------------------------------------------------------------
     --! Component declaration
@@ -102,6 +104,7 @@ architecture arch_aes_gcm of aes_gcm is
             clk_i                       : in  std_logic;
             ghash_pkt_val_i             : in  std_logic;
             ghash_new_icb_i             : in  std_logic;
+            ghash_new_key_i             : in  std_logic;
             aes_ecb_val_i               : in  std_logic;
             aes_ecb_data_i              : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
             ghash_aad_val_i             : in  std_logic;
@@ -171,6 +174,7 @@ begin
             clk_i                       => clk_i,
             ghash_pkt_val_i             => aes_gcm_ghash_pkt_val_i,
             ghash_new_icb_i             => aes_gcm_iv_val_i,
+            ghash_new_key_i             => ghash_new_key,
             aes_ecb_val_i               => aes_ecb_val,
             aes_ecb_data_i              => aes_ecb_data,
             ghash_aad_val_i             => ghash_aad_val,
@@ -197,6 +201,8 @@ begin
             ghash_ct_val_o              => ghash_ct_val
         );
 
+
+    ghash_new_key      <= or_reduce(aes_gcm_key_word_val_i);
 
     ghash_data_in_bval <= gctr_data_out_bval     when (aes_gcm_enc_dec_i = '0') else
                           aes_gcm_data_in_bval_i when (aes_gcm_ready = '1')     else

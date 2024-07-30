@@ -20,6 +20,7 @@ entity gcm_ghash is
         clk_i                       : in  std_logic;
         ghash_pkt_val_i             : in  std_logic;
         ghash_new_icb_i             : in  std_logic;
+        ghash_new_key_i             : in  std_logic;
         aes_ecb_val_i               : in  std_logic;
         aes_ecb_data_i              : in  std_logic_vector(GCM_DATA_WIDTH_C-1 downto 0);
         ghash_aad_val_i             : in  std_logic;
@@ -119,7 +120,7 @@ begin
         end if;
     end process;
 
-    h_loaded <= not(ghash_new_icb_i) and (h_loaded_q or load_h);
+    h_loaded <= not(ghash_new_key_i) and (h_loaded_q or load_h);
 
     --------------------------------------------------------------------------------
     --! Get H
@@ -149,7 +150,7 @@ begin
         end if;
     end process;
 
-    j0_loaded <= not(ghash_new_icb_i) and (j0_loaded_q or load_j0);
+    j0_loaded <= not(ghash_new_key_i or ghash_new_icb_i) and (j0_loaded_q or load_j0);
 
     --------------------------------------------------------------------------------
     --! Get J0

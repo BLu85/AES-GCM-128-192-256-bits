@@ -138,8 +138,10 @@ begin
             aes_cipher_text_o           => aes_ecb_data,
             aes_ecb_busy_o              => aes_ecb_busy);
 
-    gctr_data_in_val   <= gctr_icb_start_cnt_i or icb_val;
-    gctr_data_in       <= ZERO_128_C when (gctr_icb_start_cnt_i = '1') else icb_iv;     --! Create H0 when starting the counter
+    gctr_data_in_val   <= (gctr_icb_start_cnt_i and not(ghash_h_loaded_i)) or icb_val;
+     --! Only create H0 when starting the counter.
+     --! Keep H0 if a new key wasn't loaded after H0 was calculated.
+    gctr_data_in       <= ZERO_128_C when ((gctr_icb_start_cnt_i and not(ghash_h_loaded_i)) = '1') else icb_iv;
     gctr_ack           <= not(ghash_h_loaded_i and ghash_j0_loaded_i) or or_reduce(gctr_data_in_bval_i);
 
     --! PT can be xor-ed after H0 and J0 have been calculated
