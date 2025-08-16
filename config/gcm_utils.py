@@ -50,10 +50,6 @@ class aes_conf(object):
                             default=None, metavar='MODE', type = lambda s : s.upper(), choices=self.ip_mode,
                             help='Set the GCM mode: choose amongst 128 (default), 192, or 256.')
 
-        self.parser.add_argument('-b', '--ed',
-                            type=str.lower, default=None, metavar='ENC DEC', choices=self.ip_ed,
-                            help='Set the IP to encrypt (default) or decrypt incoming data.')
-
         self.parser.add_argument('-p', '--pipe',
                             type=int, default=None, metavar='N', choices=self.ip_pipe,
                             help='Set the number of pipe stages in the AES round core. E.g.: set -p 7 to get 3 pipe stages (maximum value).')
@@ -101,6 +97,10 @@ class aes_conf(object):
         self.parser.add_argument('-d', '--data',
                             type=str.upper, metavar='DATA',
                             help='Load a specific stream of CT or PT data; \'empty\' loads 0 CT or PT bytes')
+
+        self.parser.add_argument('-b', '--ed',
+                            type=str.lower, default=None, metavar='ENC DEC', choices=self.ip_ed,
+                            help='Set the IP to encrypt (default) or decrypt incoming data.')
 
         self.parser.add_argument('-e', '--seed',
                             type=int, metavar='N',
@@ -179,6 +179,7 @@ class aes_conf(object):
         self.set_default_value( self.args.iv       , self.args.seed , 'iv'        , RANDOM_PARAM )
         self.set_default_value( self.args.aad      , self.args.seed , 'aad'       , RANDOM_PARAM )
         self.set_default_value( self.args.data     , self.args.seed , 'data'      , RANDOM_PARAM )
+        self.set_default_value( self.args.ed       , self.args.seed , 'enc_dec'   , 'enc'        )
         self.set_default_value( self.args.compiler , self.args.seed , 'compiler'  , 'ghdl'       )
 
         self.conf_param['max_n_byte'] = test_size[self.conf_param['test_size']]
@@ -207,7 +208,6 @@ class aes_conf(object):
 
         self.set_default_value( self.args.size   , seed , 'aes_size'      , 'XS'  )
         self.set_default_value( self.args.mode   , seed , 'aes_mode'      , '128' )
-        self.set_default_value( self.args.ed     , seed , 'enc_dec'       , 'enc' )
         self.set_default_value( self.args.pipe   , seed , 'pipes_in_core' , 0     )
         self.set_default_value( self.args.ngfmul , seed , 'n_gfmul_ip'    , 1     )
 
