@@ -11,6 +11,9 @@ from config_aes_kprexp import generate_aes_pre_exp_key
 from config_aes_top    import generate_aes_top
 from argparse          import RawTextHelpFormatter
 
+import shutil
+from pathlib import Path
+
 RANDOM_PARAM = 'RANDOM'
 
 
@@ -267,8 +270,14 @@ class aes_conf(object):
     def generate_templated_file(self):
         # Clean paths
         gen_rtl_path = str(self.basepath) + 'gen_rtl/'
-        os.system('rm -rv '   + gen_rtl_path)
-        os.system('mkdir -v ' + gen_rtl_path)
+        p = Path(gen_rtl_path)
+        
+        # remove directory if it exists
+        if p.exists():
+            shutil.rmtree(p)   # like "rm -r" / "rmdir /s"
+        
+        # create directory
+        p.mkdir(parents=True, exist_ok=True)
 
         # Generate the number of pipe stages in the round core file
         generate_aes_round( self.conf_param['pipes_in_core'],
